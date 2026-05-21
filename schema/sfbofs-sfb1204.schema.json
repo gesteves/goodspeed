@@ -1,0 +1,88 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://goodspeed.gesteves.com/schema/sfbofs-sfb1204.schema.json",
+  "title": "Goodspeed feed (SFBOFS SFB1204)",
+  "description": "Modeled surface-layer conditions at station SFB1204 (SW of Alcatraz Island) from the NOAA SFBOFS FVCOM model. One run = 6 h nowcast + 48 h forecast.",
+  "type": "object",
+  "required": ["station", "model", "timeseries"],
+  "additionalProperties": false,
+  "properties": {
+    "station": {
+      "type": "object",
+      "required": ["id", "name", "lat", "lon"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "const": "SFB1204" },
+        "name": { "type": "string" },
+        "lat": { "type": "number", "minimum": -90, "maximum": 90 },
+        "lon": { "type": "number", "minimum": -180, "maximum": 180 }
+      }
+    },
+    "model": {
+      "type": "object",
+      "required": ["name", "cycle", "fetched_at", "source_files", "model_version"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string", "const": "SFBOFS" },
+        "cycle": { "type": "string", "format": "date-time" },
+        "fetched_at": { "type": "string", "format": "date-time" },
+        "source_files": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 1
+        },
+        "model_version": { "type": "string" },
+        "notes": { "type": "string" }
+      }
+    },
+    "timeseries": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/timeseriesPoint" }
+    }
+  },
+  "$defs": {
+    "timeseriesPoint": {
+      "type": "object",
+      "required": [
+        "t",
+        "source",
+        "water_temp_c",
+        "water_temp_f",
+        "current_u_ms",
+        "current_v_ms",
+        "current_speed_ms",
+        "current_speed_kt",
+        "current_bearing_deg",
+        "water_level_m",
+        "water_level_ft",
+        "salinity_psu",
+        "wind_u_ms",
+        "wind_v_ms",
+        "wind_speed_ms",
+        "wind_speed_kt",
+        "wind_bearing_deg"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "t": { "type": "string", "format": "date-time" },
+        "source": { "enum": ["nowcast", "forecast"] },
+        "water_temp_c": { "type": "number" },
+        "water_temp_f": { "type": "number" },
+        "current_u_ms": { "type": "number" },
+        "current_v_ms": { "type": "number" },
+        "current_speed_ms": { "type": "number", "minimum": 0 },
+        "current_speed_kt": { "type": "number", "minimum": 0 },
+        "current_bearing_deg": { "type": "number", "minimum": 0, "maximum": 360 },
+        "water_level_m": { "type": "number" },
+        "water_level_ft": { "type": "number" },
+        "salinity_psu": { "type": "number" },
+        "wind_u_ms": { "type": "number" },
+        "wind_v_ms": { "type": "number" },
+        "wind_speed_ms": { "type": "number", "minimum": 0 },
+        "wind_speed_kt": { "type": "number", "minimum": 0 },
+        "wind_bearing_deg": { "type": "number", "minimum": 0, "maximum": 360 }
+      }
+    }
+  }
+}

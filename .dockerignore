@@ -1,0 +1,25 @@
+# Build context is the repo root for the worker Docker build.
+# Keep the context small.
+
+**/__pycache__/
+**/*.pyc
+**/.pytest_cache/
+**/.ruff_cache/
+**/.mypy_cache/
+**/.venv/
+.git/
+.gitignore
+.github/
+output/
+worker/output/
+
+# Tests + fixtures don't need to be in the image.
+worker/tests/
+
+# The web app is irrelevant to the worker image.
+web/
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/

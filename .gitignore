@@ -1,0 +1,22 @@
+__pycache__/
+*.py[cod]
+.venv/
+.python-version
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+dist/
+build/
+*.egg-info/
+
+# Local-run output
+output/
+worker/output/
+*.nc.tmp
+
+# Editor / OS
+.DS_Store
+.idea/
+.vscode/

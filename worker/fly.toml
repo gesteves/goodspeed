@@ -1,0 +1,28 @@
+# Fly app config for the Goodspeed worker (SFBOFS / SFB1204 fetcher).
+#
+# Deploy from the repo root so the Docker build context includes both
+# worker/ and schema/:
+#
+#   fly deploy --config worker/fly.toml --dockerfile worker/Dockerfile
+#
+# Required secrets (set with `fly secrets set ...`):
+#   AWS_ACCESS_KEY_ID
+#   AWS_SECRET_ACCESS_KEY
+#   AWS_REGION
+#   S3_BUCKET
+
+app = "goodspeed-worker"
+primary_region = "iad"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  TZ = "UTC"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"
+
+[processes]
+  app = "serve"
