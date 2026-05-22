@@ -66,3 +66,12 @@ download. Pass `--force` to `run` to fetch and republish regardless:
 ```sh
 uv run --env-file .env python -m goodspeed.main run --force
 ```
+
+### Failure alerts
+
+When a scheduled run fails — a non-zero exit (`scheduled_run.failed`) or an
+unhandled exception (`scheduled_run.exception`) — the worker posts an alert to
+Slack if the `SLACK_WEBHOOK_URL` env var is set to an incoming-webhook URL. It
+is unset locally and in tests, where alerting is a silent no-op; in production
+set it as a Fly secret. Posting is best-effort: a webhook error is logged
+(`notify.slack_failed`) and never interrupts the worker.

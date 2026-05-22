@@ -8,7 +8,7 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-from . import catalog, extract, fetcher, logging_config, output, storage
+from . import catalog, extract, fetcher, logging_config, notify, output, storage
 
 log = logging.getLogger(__name__)
 
@@ -141,8 +141,13 @@ def _safe_run(out_dir: Path | None) -> None:
         rc = run_once(out_dir=out_dir)
         if rc != 0:
             log.error("scheduled_run.failed", extra={"rc": rc})
-    except Exception:
+            notify.slack_failure("scheduled_run.failed", {"rc": rc})
+    except Exception as exc:
         log.exception("scheduled_run.exception")
+        notify.slack_failure(
+            "scheduled_run.exception",
+            {"error": f"{type(exc).__name__}: {exc}"},
+        )
 
 
 def cli(argv: list[str] | None = None) -> int:
