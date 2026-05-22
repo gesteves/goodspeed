@@ -50,5 +50,10 @@ Tests use a committed nowcast NetCDF fixture under `tests/fixtures/`. See
 ## Schedule (production)
 
 `python -m goodspeed.main serve` starts an APScheduler `BlockingScheduler`
-that runs the fetch at 03:45, 09:45, 15:45, 21:45 UTC. This is the Fly Machine
+that runs the fetch hourly, on the hour, UTC. This is the Fly Machine
 entrypoint (see `fly.toml`).
+
+NOAA publishes the SFBOFS model only four times a day, but the exact publish
+times aren't guaranteed — polling hourly keeps the feed fresh whenever a new
+cycle lands. `run_once` selects the latest *available* cycle each time, so an
+hour with no new cycle simply republishes the current data.

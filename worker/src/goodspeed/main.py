@@ -89,12 +89,18 @@ def run_once(out_dir: Path | None = None, max_cycle_fallbacks: int = 2) -> int:
 
 
 def serve(out_dir: Path | None = None) -> int:
-    """Long-running scheduler: fire run_once at 03:45, 09:45, 15:45, 21:45 UTC."""
+    """Long-running scheduler: fire run_once hourly, on the hour, UTC.
+
+    NOAA only publishes the SFBOFS model four times a day, but the exact
+    publish times aren't guaranteed. Polling hourly keeps the feed fresh
+    regardless of when a new cycle lands; run_once is idempotent — when the
+    latest cycle hasn't changed it just republishes the same data.
+    """
     from apscheduler.schedulers.blocking import BlockingScheduler
     from apscheduler.triggers.cron import CronTrigger
 
     scheduler = BlockingScheduler(timezone="UTC")
-    trigger = CronTrigger(hour="3,9,15,21", minute=45, timezone="UTC")
+    trigger = CronTrigger(minute=0, timezone="UTC")
     scheduler.add_job(
         lambda: _safe_run(out_dir),
         trigger=trigger,
@@ -103,7 +109,7 @@ def serve(out_dir: Path | None = None) -> int:
         coalesce=True,
         misfire_grace_time=60 * 30,
     )
-    log.info("scheduler.starting", extra={"cron": "45 3,9,15,21 * * * UTC"})
+    log.info("scheduler.starting", extra={"cron": "0 * * * * UTC"})
     try:
         scheduler.start()
     except (KeyboardInterrupt, SystemExit):
