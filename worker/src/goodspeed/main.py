@@ -13,10 +13,29 @@ from . import catalog, extract, fetcher, logging_config, output, storage
 log = logging.getLogger(__name__)
 
 
-def run_once(out_dir: Path | None = None, max_cycle_fallbacks: int = 2) -> int:
-    """Fetch the latest available cycle, build the feed, publish it. Returns 0 on success."""
+def run_once(
+    out_dir: Path | None = None,
+    max_cycle_fallbacks: int = 2,
+    force: bool = False,
+) -> int:
+    """Fetch the latest available cycle, build the feed, publish it. Returns 0 on success.
+
+    The SFBOFS NetCDF files are large, so before fetching we compare the latest
+    ready cycle against the cycle already in the published ``latest.json``. When
+    they match there is nothing new to publish and we skip the download. Pass
+    ``force=True`` to fetch and republish regardless.
+    """
     fetched_at = datetime.now(timezone.utc)
     cycle = catalog.latest_ready_cycle(fetched_at)
+
+    if not force:
+        published = storage.read_published_cycle(out_dir=out_dir)
+        if published == cycle.iso():
+            log.info(
+                "run.skipped",
+                extra={"cycle": cycle.iso(), "reason": "latest cycle already published"},
+            )
+            return 0
 
     nc_ds = fc_ds = None
     nc_meta = fc_meta = None
@@ -143,6 +162,11 @@ def cli(argv: list[str] | None = None) -> int:
         default=None,
         help="Write JSON to this local directory instead of S3.",
     )
+    run_p.add_argument(
+        "--force",
+        action="store_true",
+        help="Fetch and republish even if the latest cycle is already published.",
+    )
 
     serve_p = sub.add_parser("serve", help="Long-running scheduler (Fly Machine entrypoint).")
     serve_p.add_argument(
@@ -156,7 +180,7 @@ def cli(argv: list[str] | None = None) -> int:
     logging_config.configure(level=args.log_level)
 
     if args.cmd == "run":
-        return run_once(out_dir=args.out_dir)
+        return run_once(out_dir=args.out_dir, force=args.force)
     if args.cmd == "serve":
         return serve(out_dir=args.out_dir)
     parser.error(f"Unknown command {args.cmd}")

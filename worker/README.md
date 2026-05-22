@@ -55,5 +55,14 @@ entrypoint (see `fly.toml`).
 
 NOAA publishes the SFBOFS model only four times a day, but the exact publish
 times aren't guaranteed — polling hourly keeps the feed fresh whenever a new
-cycle lands. `run_once` selects the latest *available* cycle each time, so an
-hour with no new cycle simply republishes the current data.
+cycle lands.
+
+To avoid downloading the large NetCDF files needlessly, each run first reads
+the cycle from the already-published `latest.json` and compares it to the
+latest ready cycle. When they match it logs `run.skipped` and exits without
+fetching; only an hour that brings a genuinely new cycle does the full
+download. Pass `--force` to `run` to fetch and republish regardless:
+
+```sh
+uv run --env-file .env python -m goodspeed.main run --force
+```
