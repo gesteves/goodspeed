@@ -11,6 +11,10 @@ dist/
 build/
 *.egg-info/
 
+# Secrets
+.env
+.env.*
+
 # Local-run output
 output/
 worker/output/
