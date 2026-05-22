@@ -5,8 +5,7 @@ from __future__ import annotations
 import json
 import logging
 import sys
-from datetime import datetime, timezone
-
+from datetime import UTC, datetime
 
 _STD_ATTRS = {
     "name", "msg", "args", "levelname", "levelno", "pathname", "filename",
@@ -19,7 +18,7 @@ _STD_ATTRS = {
 class JsonFormatter(logging.Formatter):
     def format(self, record: logging.LogRecord) -> str:  # noqa: D401
         payload: dict[str, object] = {
-            "ts": datetime.fromtimestamp(record.created, tz=timezone.utc).isoformat(),
+            "ts": datetime.fromtimestamp(record.created, tz=UTC).isoformat(),
             "level": record.levelname,
             "logger": record.name,
             "msg": record.getMessage(),

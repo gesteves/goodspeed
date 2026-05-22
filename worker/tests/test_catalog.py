@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import date, datetime, timezone
+from datetime import UTC, date, datetime
 
 import pytest
 
@@ -9,7 +9,7 @@ from goodspeed.catalog import Cycle
 
 
 def _utc(y, mo, d, h, mi=0):
-    return datetime(y, mo, d, h, mi, tzinfo=timezone.utc)
+    return datetime(y, mo, d, h, mi, tzinfo=UTC)
 
 
 @pytest.mark.parametrize(

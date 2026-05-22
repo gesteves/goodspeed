@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import date, datetime, time, timedelta, timezone
+from datetime import UTC, date, datetime, time, timedelta
 from typing import Literal
 
 CYCLES: tuple[int, int, int, int] = (3, 9, 15, 21)
@@ -25,7 +25,7 @@ class Cycle:
     hour: int
 
     def datetime_utc(self) -> datetime:
-        return datetime.combine(self.date, time(self.hour), tzinfo=timezone.utc)
+        return datetime.combine(self.date, time(self.hour), tzinfo=UTC)
 
     def iso(self) -> str:
         return f"{self.date.isoformat()}T{self.hour:02d}:00:00Z"
@@ -42,11 +42,11 @@ def latest_ready_cycle(now_utc: datetime, ready_buffer_min: int = READY_BUFFER_M
     """
     if now_utc.tzinfo is None:
         raise ValueError("now_utc must be timezone-aware")
-    candidate = now_utc.astimezone(timezone.utc) - timedelta(minutes=ready_buffer_min)
+    candidate = now_utc.astimezone(UTC) - timedelta(minutes=ready_buffer_min)
     for delta_days in range(0, 2):
         d = candidate.date() - timedelta(days=delta_days)
         for hour in reversed(CYCLES):
-            cycle_dt = datetime.combine(d, time(hour), tzinfo=timezone.utc)
+            cycle_dt = datetime.combine(d, time(hour), tzinfo=UTC)
             if cycle_dt <= candidate:
                 return Cycle(date=d, hour=hour)
     raise RuntimeError(f"Could not resolve a cycle on or before {candidate.isoformat()}")

@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 import re
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import numpy as np
 import xarray as xr
@@ -114,7 +114,7 @@ def decode_time(da: xr.DataArray) -> np.ndarray:
         # xarray-decoded: assume UTC (FVCOM file convention).
         return np.array(
             [
-                _np_dt_to_py(t).replace(tzinfo=timezone.utc)
+                _np_dt_to_py(t).replace(tzinfo=UTC)
                 for t in values
             ],
             dtype=object,
@@ -124,7 +124,7 @@ def decode_time(da: xr.DataArray) -> np.ndarray:
     m = _TIME_UNITS_RE.search(units)
     if not m:
         raise ValueError(f"Cannot parse time units {units!r}")
-    epoch = datetime.fromisoformat(m.group(1).replace(" ", "T")).replace(tzinfo=timezone.utc)
+    epoch = datetime.fromisoformat(m.group(1).replace(" ", "T")).replace(tzinfo=UTC)
     return np.array(
         [epoch + _seconds_to_timedelta(float(s)) for s in values],
         dtype=object,
@@ -134,7 +134,7 @@ def decode_time(da: xr.DataArray) -> np.ndarray:
 def _np_dt_to_py(t: np.datetime64) -> datetime:
     # np.datetime64 -> python datetime via int nanoseconds since epoch.
     ns = t.astype("datetime64[ns]").astype("int64")
-    return datetime.fromtimestamp(ns / 1e9, tz=timezone.utc).replace(tzinfo=None)
+    return datetime.fromtimestamp(ns / 1e9, tz=UTC).replace(tzinfo=None)
 
 
 def _seconds_to_timedelta(s: float):

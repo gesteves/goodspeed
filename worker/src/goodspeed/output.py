@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import logging
 import os
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -100,7 +100,7 @@ def _series_to_points(series: StationSeries, source: str) -> list[dict[str, Any]
     points: list[dict[str, Any]] = []
     for i, t in enumerate(series.times):
         # t is a tz-aware datetime; ensure UTC and ISO-Z formatting.
-        ts = t.astimezone(timezone.utc) if t.tzinfo else t.replace(tzinfo=timezone.utc)
+        ts = t.astimezone(UTC) if t.tzinfo else t.replace(tzinfo=UTC)
         points.append(
             {
                 "t": ts.strftime("%Y-%m-%dT%H:%M:%SZ"),
@@ -154,7 +154,7 @@ def build_feed(
         "model": {
             "name": "SFBOFS",
             "cycle": cycle.iso(),
-            "fetched_at": fetched_at_utc.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "fetched_at": fetched_at_utc.astimezone(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
             "source_files": source_files,
             "model_version": MODEL_VERSION,
             "notes": MODEL_NOTES,

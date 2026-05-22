@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import timezone
+from datetime import UTC
 
 import numpy as np
 import pytest
@@ -63,7 +63,7 @@ def test_extract_station_series_shapes(nowcast_ds):
         assert arr.shape == (n,)
 
     # Times are tz-aware and monotonically increasing.
-    assert all(t.tzinfo is timezone.utc for t in series.times)
+    assert all(t.tzinfo is UTC for t in series.times)
     deltas = np.diff([t.timestamp() for t in series.times])
     assert (deltas > 0).all()
 
@@ -71,7 +71,7 @@ def test_extract_station_series_shapes(nowcast_ds):
 def test_decode_time_monotonic_utc(nowcast_ds):
     times = extract.decode_time(nowcast_ds["time"])
     assert times.dtype == object
-    assert all(t.tzinfo is timezone.utc for t in times)
+    assert all(t.tzinfo is UTC for t in times)
     seconds = np.array([t.timestamp() for t in times])
     assert (np.diff(seconds) > 0).all()
     # Cadence is 6 minutes (360 s) — spec says nowcast covers 6 h.

@@ -5,7 +5,7 @@ from __future__ import annotations
 import argparse
 import logging
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 from . import catalog, extract, fetcher, logging_config, notify, output, storage
@@ -25,7 +25,7 @@ def run_once(
     they match there is nothing new to publish and we skip the download. Pass
     ``force=True`` to fetch and republish regardless.
     """
-    fetched_at = datetime.now(timezone.utc)
+    fetched_at = datetime.now(UTC)
     cycle = catalog.latest_ready_cycle(fetched_at)
 
     if not force:

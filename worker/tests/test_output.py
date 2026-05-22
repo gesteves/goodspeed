@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from datetime import date, datetime, timedelta, timezone
+from datetime import UTC, date, datetime, timedelta
 
 import jsonschema
 import numpy as np
@@ -9,7 +9,6 @@ import pytest
 
 from goodspeed import catalog, output
 from goodspeed.extract import StationSeries
-
 
 # ---- direction conventions --------------------------------------------------
 
@@ -49,9 +48,8 @@ def test_unit_conversions():
 
 
 def _make_series(start_iso: str, n: int, lat=37.82, lon=-122.43) -> StationSeries:
-    start = datetime.fromisoformat(start_iso).replace(tzinfo=timezone.utc)
+    start = datetime.fromisoformat(start_iso).replace(tzinfo=UTC)
     times = np.array([start + timedelta(minutes=6 * i) for i in range(n)], dtype=object)
-    zeros = np.zeros(n)
     return StationSeries(
         lat=lat,
         lon=lon,
@@ -77,7 +75,7 @@ def test_build_feed_dedupes_boundary():
     cycle = catalog.Cycle(date(2026, 5, 20), 9)
     feed = output.build_feed(
         cycle=cycle,
-        fetched_at_utc=datetime(2026, 5, 20, 9, 45, tzinfo=timezone.utc),
+        fetched_at_utc=datetime(2026, 5, 20, 9, 45, tzinfo=UTC),
         nowcast=nowcast,
         forecast=forecast,
         source_files=["nc", "fc"],
@@ -101,7 +99,7 @@ def test_build_feed_source_tagging():
     cycle = catalog.Cycle(date(2026, 5, 20), 9)
     feed = output.build_feed(
         cycle=cycle,
-        fetched_at_utc=datetime(2026, 5, 20, 9, 45, tzinfo=timezone.utc),
+        fetched_at_utc=datetime(2026, 5, 20, 9, 45, tzinfo=UTC),
         nowcast=nowcast,
         forecast=forecast,
         source_files=["nc", "fc"],
@@ -120,7 +118,7 @@ def _valid_feed():
     cycle = catalog.Cycle(date(2026, 5, 20), 9)
     return output.build_feed(
         cycle=cycle,
-        fetched_at_utc=datetime(2026, 5, 20, 9, 45, tzinfo=timezone.utc),
+        fetched_at_utc=datetime(2026, 5, 20, 9, 45, tzinfo=UTC),
         nowcast=nowcast,
         forecast=forecast,
         source_files=["nc", "fc"],
