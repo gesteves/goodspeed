@@ -19,7 +19,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  PRODUCTION_URL: ${{ secrets.PRODUCTION_URL || 'https://alcatraz.giventotri.com/latest.json' }}
+  PRODUCTION_URL: ${{ secrets.PRODUCTION_URL }}
   FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
 
 jobs:
@@ -139,7 +139,7 @@ jobs:
           webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
           webhook-type: incoming-webhook
           payload: |
-            text: "Worker deploy successful :rocket: — feed at <${{ env.PRODUCTION_URL }}|alcatraz.giventotri.com>"
+            text: "Worker deploy successful :rocket:"
             attachments:
               - color: "good"
                 fallback: "Worker deploy successful: ${{ env.PRODUCTION_URL }}"
