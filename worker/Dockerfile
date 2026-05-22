@@ -1,5 +1,5 @@
 # Build context is the REPO ROOT (so we can COPY both worker/ and schema/).
-# Build: docker build -t goodspeed-worker -f worker/Dockerfile .
+# Build: docker build -t gdspd-worker -f worker/Dockerfile .
 # Fly:   fly deploy --config worker/fly.toml --dockerfile worker/Dockerfile
 #        (run from the repo root)
 FROM python:3.12-slim
