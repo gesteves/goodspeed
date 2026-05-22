@@ -17,18 +17,26 @@ before being written.
 
 ## Run against S3
 
-Set the S3 env vars (or use Fly secrets — same names):
+Put the S3 credentials in a `.env` file (gitignored — never commit it):
 
 ```sh
-export AWS_ACCESS_KEY_ID=...
-export AWS_SECRET_ACCESS_KEY=...
-export AWS_REGION=us-east-1
-export S3_BUCKET=my-bucket
-uv run python -m goodspeed.main run
+AWS_ACCESS_KEY_ID=...
+AWS_SECRET_ACCESS_KEY=...
+AWS_REGION=us-east-1
+S3_BUCKET=my-bucket
+```
+
+Then run with `uv`, which loads the file for you:
+
+```sh
+uv run --env-file .env python -m goodspeed.main run
 ```
 
 With `S3_BUCKET` set and no `--out-dir`, the worker pushes to S3 with proper
 `Content-Type` and `Cache-Control` headers per the spec.
+
+In production these come from Fly secrets (same variable names), so no `.env`
+is involved.
 
 ## Tests
 
