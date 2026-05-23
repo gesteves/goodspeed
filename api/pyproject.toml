@@ -10,7 +10,7 @@ dependencies = [
     # `uv lock --upgrade`.
     "xarray>=2024.10,<2026",
     "netCDF4>=1.7.1,<1.8",
-    "numpy>=2.1,<2.3",
+    "numpy>=2.1,<2.5",
     "jsonschema>=4.23,<5",
     "apscheduler>=3.10,<4",
     "requests>=2.32,<3",
