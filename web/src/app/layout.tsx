@@ -20,7 +20,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Goodspeed — San Francisco Bay swim conditions",
+  title: "Alcatraz Swim Conditions",
   description:
     "Modeled water temperature, currents, tide, and wind for the Alcatraz-to-Marina swim route.",
 };
