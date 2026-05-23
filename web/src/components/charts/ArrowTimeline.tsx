@@ -29,13 +29,6 @@ export interface ArrowTimelineProps {
   bearing: (p: TimeseriesPoint) => number;
   /** CSS color for each arrow. */
   color: (p: TimeseriesPoint) => string;
-  /**
-   * Optional second visual channel so the flood/ebb distinction doesn't rely
-   * on color alone (a11y for color-blind users). "solid" = filled head;
-   * "outlined" = hollow head with a slightly thinner shaft. Defaults to
-   * "solid" when omitted (wind arrows have no flood/ebb dichotomy).
-   */
-  variant?: (p: TimeseriesPoint) => "solid" | "outlined";
   /** When true for a point, draw a hollow dot instead of an arrow. */
   isSlack?: (p: TimeseriesPoint) => boolean;
 }
@@ -56,7 +49,6 @@ export function ArrowTimeline({
   readout,
   bearing,
   color,
-  variant,
   isSlack,
 }: ArrowTimelineProps) {
   const { hoveredIndex, setHoveredIndex } = useScrub();
@@ -135,30 +127,20 @@ export function ArrowTimeline({
           }
           const len = ARROW_LENGTH;
           const c = color(p);
-          const outlined = variant?.(p) === "outlined";
-          const headPoints = `${cx},${cy - len / 2 - 4} ${cx - 4},${cy - len / 2 + 3} ${cx + 4},${cy - len / 2 + 3}`;
           return (
             <g key={i} transform={`rotate(${bearing(p)} ${cx} ${cy})`}>
               <line
                 className={styles.arrowShaft}
                 stroke={c}
-                strokeWidth={outlined ? 1.5 : undefined}
                 x1={cx}
                 y1={cy + len / 2}
                 x2={cx}
                 y2={cy - len / 2}
               />
-              {outlined ? (
-                <polygon
-                  fill="var(--surface)"
-                  stroke={c}
-                  strokeWidth={1.5}
-                  strokeLinejoin="round"
-                  points={headPoints}
-                />
-              ) : (
-                <polygon fill={c} points={headPoints} />
-              )}
+              <polygon
+                fill={c}
+                points={`${cx},${cy - len / 2 - 4} ${cx - 4},${cy - len / 2 + 3} ${cx + 4},${cy - len / 2 + 3}`}
+              />
             </g>
           );
         })}

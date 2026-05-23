@@ -48,10 +48,6 @@ const DECIMALS: Record<MetricKey, number> = {
 const currentBearing = (p: TimeseriesPoint) => p.current_bearing_deg;
 const currentColor = (p: TimeseriesPoint) =>
   classifyCurrent(p) === "flood" ? "var(--flood)" : "var(--ebb)";
-// Second visual channel so flood/ebb isn't color-only: flood = solid filled
-// arrowhead, ebb = outlined hollow arrowhead. Slack uses the existing dot.
-const currentVariant = (p: TimeseriesPoint): "solid" | "outlined" =>
-  classifyCurrent(p) === "flood" ? "solid" : "outlined";
 const currentSlack = (p: TimeseriesPoint) => classifyCurrent(p) === "slack";
 
 const windDownwind = (p: TimeseriesPoint) => (p.wind_bearing_deg + 180) % 360;
@@ -221,7 +217,6 @@ function ChartStack({
         swatchColor="var(--chart-current)"
         bearing={currentBearing}
         color={currentColor}
-        variant={currentVariant}
         isSlack={currentSlack}
         readout={
           <DirectionReadout
