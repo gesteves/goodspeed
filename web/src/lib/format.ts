@@ -30,22 +30,28 @@ export function formatAxisTick(value: string | number | Date): string {
     : formatInTimeZone(d, DISPLAY_TZ, "ha");
 }
 
-/** Compact relative time: "just now", "2h ago", "in 35m". */
+/** Compact relative time, minute-precise: "just now", "35m ago", "in 1h 5m", "2d 3h ago". */
 export function formatRelative(
   value: string | number | Date,
   now: Date = new Date(),
 ): string {
   const diffMs = now.getTime() - toDate(value).getTime();
   const past = diffMs >= 0;
-  const mins = Math.round(Math.abs(diffMs) / 60_000);
-  if (mins < 1) return "just now";
+  const totalMins = Math.round(Math.abs(diffMs) / 60_000);
+  if (totalMins < 1) return "just now";
 
   let text: string;
-  if (mins < 60) {
-    text = `${mins}m`;
+  if (totalMins < 60) {
+    text = `${totalMins}m`;
+  } else if (totalMins < 24 * 60) {
+    const hours = Math.floor(totalMins / 60);
+    const mins = totalMins % 60;
+    text = mins === 0 ? `${hours}h` : `${hours}h ${mins}m`;
   } else {
-    const hours = Math.round(mins / 60);
-    text = hours < 24 ? `${hours}h` : `${Math.round(hours / 24)}d`;
+    const totalHours = Math.floor(totalMins / 60);
+    const days = Math.floor(totalHours / 24);
+    const hours = totalHours % 24;
+    text = hours === 0 ? `${days}d` : `${days}d ${hours}h`;
   }
   return past ? `${text} ago` : `in ${text}`;
 }
