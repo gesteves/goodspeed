@@ -79,8 +79,9 @@ Hosted on Netlify with the standard Git-triggered build flow. Netlify runs
 `@astrojs/netlify` writes the function bundle + redirects into `.netlify/`
 automatically — no build plugin needed.
 
-The `[[redirects]]` in `../netlify.toml` proxy Plausible analytics (the
-script and `/api/event`) through the dashboard's own domain so ad blockers
-don't drop them.
+The `[[redirects]]` in `netlify.toml` proxy Plausible analytics (the script
+and `/api/event`) through the dashboard's own domain so ad blockers don't
+drop them. The Netlify site is configured with `base = "web"` in the
+dashboard, so Netlify reads `web/netlify.toml` directly.
 
 The repo's `../.github/workflows/ci.yml` only covers the API (deploy to Fly.io).
