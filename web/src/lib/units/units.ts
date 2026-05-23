@@ -9,9 +9,14 @@ export type UnitSystem = "imperial" | "metric";
 
 export const DEFAULT_UNIT_SYSTEM: UnitSystem = "imperial";
 
+/** Keys of TimeseriesPoint whose value is a number. */
+type NumericTimeseriesKey = {
+  [K in keyof TimeseriesPoint]: TimeseriesPoint[K] extends number ? K : never;
+}[keyof TimeseriesPoint];
+
 export interface UnitField {
   /** Numeric field on a timeseries point. */
-  field: keyof TimeseriesPoint;
+  field: NumericTimeseriesKey;
   unit: string;
 }
 
@@ -57,5 +62,5 @@ export function readMetric(
   metric: MetricDef,
   sys: UnitSystem,
 ): number {
-  return p[unitField(metric, sys).field] as number;
+  return p[unitField(metric, sys).field];
 }

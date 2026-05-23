@@ -1,6 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import type { FieldStatus } from "@/lib/data-source";
 import type { FieldFeed } from "@/lib/schema";
 import styles from "./bayMap.module.css";
 import { computeGridExtent } from "./extent";
@@ -12,23 +13,35 @@ const BayMap = dynamic(
 
 interface BayMapSectionProps {
   field: FieldFeed | null;
+  fieldStatus: FieldStatus;
   nowFieldIndex: number;
   pointTimes: string[];
 }
 
 /**
- * Lazy-loaded wrapper for the bay map. Renders nothing when the field feed is
- * missing or when the Mapbox token isn't configured -- the rest of the
- * dashboard works fine without it.
+ * Lazy-loaded wrapper for the bay map.
  *
- * The section's aspect ratio is derived from the field grid's actual extent
- * so the map fills the container without blank margins.
+ * Render decisions:
+ *  - `fieldStatus === "failed"` → render an inline notice so users understand
+ *    the map is temporarily down rather than wondering where a section went.
+ *  - `fieldStatus === "unconfigured"` or no Mapbox token → render nothing.
+ *    These are deploy-time choices, not a degraded production state.
+ *  - happy path → render the lazy `BayMap` with an aspect-ratio derived from
+ *    the field grid's actual extent.
  */
 export function BayMapSection({
   field,
+  fieldStatus,
   nowFieldIndex,
   pointTimes,
 }: BayMapSectionProps) {
+  if (fieldStatus === "failed") {
+    return (
+      <section className={styles.unavailable} role="status" aria-live="polite">
+        Bay map data temporarily unavailable — charts below remain live.
+      </section>
+    );
+  }
   if (!field) return null;
   if (!process.env.NEXT_PUBLIC_MAPBOX_TOKEN) {
     if (typeof window !== "undefined") {

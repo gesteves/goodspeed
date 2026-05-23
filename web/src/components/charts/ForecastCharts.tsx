@@ -1,7 +1,7 @@
 "use client";
 
 import { ParentSize } from "@visx/responsive";
-import { useMemo } from "react";
+import { useMemo, type KeyboardEvent } from "react";
 import { compass16 } from "@/lib/angles";
 import { classifyCurrent } from "@/lib/derive/currents";
 import type { TideEvent } from "@/lib/derive/tides";
@@ -21,6 +21,12 @@ import { CHART_MARGIN, makeTimeScale } from "./scales";
 import { useScrub } from "./ScrubContext";
 import { TideMarkers } from "./TideMarkers";
 import { TimeSeriesChart } from "./TimeSeriesChart";
+
+// Keyboard scrub step. SFBOFS publishes points every 6 minutes, so one step is
+// one sample; Shift+Arrow jumps an hour. Home/End jump to the series ends;
+// Escape releases the scrub back to "Now".
+const SCRUB_STEP_NORMAL = 1;
+const SCRUB_STEP_SHIFT = 10;
 
 export interface ForecastChartsProps {
   data: TimeseriesPoint[];
@@ -42,6 +48,10 @@ const DECIMALS: Record<MetricKey, number> = {
 const currentBearing = (p: TimeseriesPoint) => p.current_bearing_deg;
 const currentColor = (p: TimeseriesPoint) =>
   classifyCurrent(p) === "flood" ? "var(--flood)" : "var(--ebb)";
+// Second visual channel so flood/ebb isn't color-only: flood = solid filled
+// arrowhead, ebb = outlined hollow arrowhead. Slack uses the existing dot.
+const currentVariant = (p: TimeseriesPoint): "solid" | "outlined" =>
+  classifyCurrent(p) === "flood" ? "solid" : "outlined";
 const currentSlack = (p: TimeseriesPoint) => classifyCurrent(p) === "slack";
 
 const windDownwind = (p: TimeseriesPoint) => (p.wind_bearing_deg + 180) % 360;
@@ -64,7 +74,7 @@ function MetricReadout({
 }) {
   const metric = METRICS[metricKey];
   return (
-    <span className={styles.readout}>
+    <span className={styles.readout} aria-live="polite">
       <span className={styles.readoutMain}>
         <span className={`${styles.readoutValue} tnum`}>
           {formatNumber(readMetric(point, metric, units), DECIMALS[metricKey])}
@@ -91,7 +101,7 @@ function DirectionReadout({
   time: string;
 }) {
   return (
-    <span className={styles.readout}>
+    <span className={styles.readout} aria-live="polite">
       <span className={styles.readoutMain}>
         <span className={`${styles.readoutValue} tnum`}>{degrees}°</span>
         <span className={styles.readoutUnit}>
@@ -110,7 +120,32 @@ function ChartStack({
   tideEvents,
 }: ForecastChartsProps & { width: number }) {
   const { units } = useUnits();
-  const { hoveredIndex } = useScrub();
+  const { hoveredIndex, setHoveredIndex } = useScrub();
+  const lastIndex = data.length - 1;
+
+  // Keyboard scrub: arrow keys move the shared scrub index across the stack.
+  // The container is focusable (tabIndex=0) and has an aria-label describing
+  // the controls; readouts have aria-live="polite" so updates are announced.
+  const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+    const current = hoveredIndex ?? nowIndex;
+    const step = e.shiftKey ? SCRUB_STEP_SHIFT : SCRUB_STEP_NORMAL;
+    if (e.key === "ArrowLeft") {
+      setHoveredIndex(Math.max(0, current - step));
+      e.preventDefault();
+    } else if (e.key === "ArrowRight") {
+      setHoveredIndex(Math.min(lastIndex, current + step));
+      e.preventDefault();
+    } else if (e.key === "Home") {
+      setHoveredIndex(0);
+      e.preventDefault();
+    } else if (e.key === "End") {
+      setHoveredIndex(lastIndex);
+      e.preventDefault();
+    } else if (e.key === "Escape") {
+      setHoveredIndex(null);
+      e.preventDefault();
+    }
+  };
 
   const times = useMemo(() => data.map((p) => new Date(p.t)), [data]);
 
@@ -135,14 +170,20 @@ function ChartStack({
   );
 
   // The readouts show the scrubbed point, or "now" when not scrubbing.
-  const displayIndex = Math.min(hoveredIndex ?? nowIndex, data.length - 1);
+  const displayIndex = Math.min(hoveredIndex ?? nowIndex, lastIndex);
   const dp = data[displayIndex];
   const timeLabel = hoveredIndex != null ? formatDayClock(dp.t) : "Now";
 
   const common = { data, times, width, xScale, nowIndex };
 
   return (
-    <div className={styles.plot}>
+    <div
+      className={styles.plot}
+      tabIndex={0}
+      role="group"
+      aria-label="Forecast charts. Use arrow keys to scrub; Shift+Arrow to jump by an hour; Home and End for the ends; Escape to release."
+      onKeyDown={onKeyDown}
+    >
       <TimeSeriesChart
         {...common}
         height={CHART_HEIGHT}
@@ -180,6 +221,7 @@ function ChartStack({
         swatchColor="var(--chart-current)"
         bearing={currentBearing}
         color={currentColor}
+        variant={currentVariant}
         isSlack={currentSlack}
         readout={
           <DirectionReadout

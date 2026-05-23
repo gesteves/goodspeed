@@ -5,27 +5,13 @@ import { Header } from "@/components/Header";
 import { BayMapSection } from "@/components/map/BayMapSection";
 import { NowPanel } from "@/components/now/NowPanel";
 import { getDashboardData } from "@/lib/data-source";
-import { findNowIndex, levelTrend } from "@/lib/derive/now";
+import { findNowIndex, levelTrend, nearestTimeIndex } from "@/lib/derive/now";
 import { getStaleness } from "@/lib/derive/staleness";
 import { findTideExtrema, nextTideEvent } from "@/lib/derive/tides";
 import styles from "./page.module.css";
 
-function nearestTimeIndex(times: readonly string[], target: Date): number {
-  const t = target.getTime();
-  let best = 0;
-  let bestDiff = Infinity;
-  for (let i = 0; i < times.length; i++) {
-    const d = Math.abs(new Date(times[i]).getTime() - t);
-    if (d < bestDiff) {
-      bestDiff = d;
-      best = i;
-    }
-  }
-  return best;
-}
-
 export default async function Page() {
-  const { feed, field } = await getDashboardData();
+  const { feed, field, fieldStatus } = await getDashboardData();
   const ts = feed.timeseries;
   const now = new Date();
 
@@ -55,6 +41,7 @@ export default async function Page() {
         <ScrubProvider>
           <BayMapSection
             field={field}
+            fieldStatus={fieldStatus}
             nowFieldIndex={nowFieldIndex}
             pointTimes={pointTimes}
           />

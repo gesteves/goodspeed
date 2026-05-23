@@ -178,7 +178,12 @@ def load_field_grid(
         url = regulargrid_dods_url(cycle, phase, hour)
         try:
             frame = load_field_frame(url, bbox)
-        except Exception as exc:  # noqa: BLE001 - per-hour skip
+        except (OSError, ValueError) as exc:
+            # OSError covers OPeNDAP/network failures and missing files;
+            # ValueError is raised when the bbox lands fully on land. Anything
+            # else (KeyError, AttributeError, TypeError, ...) is a programming
+            # error and should crash the run instead of silently degrading the
+            # field feed below the MAX_FAILED_FRACTION threshold.
             failures += 1
             log.warning(
                 "field.hour.failed",

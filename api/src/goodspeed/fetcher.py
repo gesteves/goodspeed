@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import logging
 import tempfile
 import time
@@ -145,3 +146,17 @@ def open_dataset(
         elapsed_s=round(time.monotonic() - t0, 2),
         local_path=local,
     )
+
+
+def close_dataset(ds: xr.Dataset | None, meta: FetchMeta | None) -> None:
+    """Close ``ds`` and, in download mode, unlink the on-disk tempfile.
+
+    Safe to call with ``None`` arguments. Errors are logged and swallowed so
+    cleanup never masks the original failure that triggered it.
+    """
+    if ds is not None:
+        with contextlib.suppress(Exception):
+            ds.close()
+    if meta is not None and meta.local_path is not None:
+        with contextlib.suppress(OSError):
+            meta.local_path.unlink(missing_ok=True)

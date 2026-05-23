@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { makeSeries } from "@/test/fixtures";
-import { findNowIndex, levelTrend } from "./now";
+import { findNowIndex, levelTrend, nearestTimeIndex } from "./now";
 
 const START = new Date("2026-05-20T00:00:00Z");
 
@@ -16,6 +16,17 @@ describe("findNowIndex", () => {
     const ts = makeSeries(10, START, () => ({}));
     expect(findNowIndex(ts, new Date("2020-01-01T00:00:00Z"))).toBe(0);
     expect(findNowIndex(ts, new Date("2030-01-01T00:00:00Z"))).toBe(9);
+  });
+});
+
+describe("nearestTimeIndex", () => {
+  it("operates on a bare string[] timeline (field-feed shape)", () => {
+    const times = Array.from({ length: 5 }, (_, i) =>
+      new Date(START.getTime() + i * 60 * 60_000).toISOString(),
+    );
+    expect(nearestTimeIndex(times, new Date(START.getTime() + 2.6 * 60 * 60_000))).toBe(3);
+    expect(nearestTimeIndex(times, new Date("2020-01-01T00:00:00Z"))).toBe(0);
+    expect(nearestTimeIndex(times, new Date("2030-01-01T00:00:00Z"))).toBe(4);
   });
 });
 

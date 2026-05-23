@@ -60,18 +60,52 @@ async def field_latest(_: Request) -> Response:
 
 
 async def healthz(_: Request) -> Response:
-    """200 once the point feed exists and parses, 503 otherwise.
+    """Health check for the point feed; surfaces the field feed state too.
 
-    Used by Fly's HTTP health check. The field feed is best-effort in the
-    pipeline (see ``main._publish_field_feed``) so it's not a hard requirement.
-    ``no-store`` so no intermediary can serve a stale 200 once the API has
-    actually started failing.
+    Status semantics for the *point* feed (drives the HTTP code Fly sees):
+
+    * ``ok``       (200) — file present and parsed.
+    * ``warming``  (503) — file not yet published (fresh deploy, brief window).
+    * ``broken``   (500) — file present but unreadable/unparseable; on-disk
+      corruption or a publish bug.
+
+    The field feed is best-effort in the pipeline (see
+    ``main._publish_field_feed``) so it never gates the response code; its
+    state is reported in ``field_status`` / ``field_cycle`` for external
+    monitoring. ``no-store`` so no intermediary can serve a stale 200 once the
+    API has actually started failing.
     """
-    cycle = storage.read_published_cycle(out_dir())
+    out = out_dir()
+    point = storage.probe_feed(out, storage.LATEST_KEY)
+    field = storage.probe_feed(out, storage.FIELD_LATEST_KEY)
     headers = {"Cache-Control": "no-store"}
-    if cycle is None:
-        return JSONResponse({"status": "warming"}, status_code=503, headers=headers)
-    return JSONResponse({"status": "ok", "cycle": cycle}, headers=headers)
+
+    if point.state == "missing":
+        return JSONResponse(
+            {"status": "warming", "field_status": field.state, "field_cycle": field.cycle},
+            status_code=503,
+            headers=headers,
+        )
+    if point.state == "broken":
+        return JSONResponse(
+            {
+                "status": "broken",
+                "error": point.error,
+                "field_status": field.state,
+                "field_cycle": field.cycle,
+            },
+            status_code=500,
+            headers=headers,
+        )
+    return JSONResponse(
+        {
+            "status": "ok",
+            "cycle": point.cycle,
+            "field_status": field.state,
+            "field_cycle": field.cycle,
+        },
+        headers=headers,
+    )
 
 
 async def _http_exception(_: Request, exc: HTTPException) -> Response:

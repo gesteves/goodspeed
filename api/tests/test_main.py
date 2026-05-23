@@ -53,3 +53,38 @@ def test_run_once_force_skips_cycle_probe(tmp_path, monkeypatch):
     monkeypatch.setattr(main.fetcher, "open_dataset", _raise_missing)
     assert main.run_once(out_dir=tmp_path, force=True) == 2
     assert probed == [], "--force must not consult the published cycle"
+
+
+def test_run_once_closes_nowcast_when_forecast_missing(tmp_path, monkeypatch):
+    """If nowcast opens but forecast 404s, the nowcast Dataset must be closed
+    before the fallback retries — otherwise it leaks for the lifetime of the
+    process. This guards the regression fix in main.run_once's fallback loop.
+    """
+    _patch_cycle(monkeypatch)
+    monkeypatch.setattr(main.storage, "read_published_cycle", lambda *a, **k: None)
+
+    class _FakeDs:
+        def __init__(self) -> None:
+            self.closed = False
+
+        def close(self) -> None:
+            self.closed = True
+
+    opened: list[_FakeDs] = []
+
+    def _open(cycle, kind, *a, **k):
+        # Nowcast succeeds; forecast 404s on every cycle, exhausting fallbacks.
+        if kind == "nowcast":
+            ds = _FakeDs()
+            opened.append(ds)
+            return ds, fetcher.FetchMeta(
+                cycle=cycle, kind=kind, url="opendap://test", mode="opendap", elapsed_s=0.1
+            )
+        raise fetcher.FileNotAvailable(f"test: {cycle.iso()} {kind}")
+
+    monkeypatch.setattr(main.fetcher, "open_dataset", _open)
+    assert main.run_once(out_dir=tmp_path) == 2
+    assert opened, "nowcast open should have been attempted"
+    assert all(ds.closed for ds in opened), (
+        "every successfully-opened nowcast Dataset must be closed before the next fallback"
+    )

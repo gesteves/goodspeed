@@ -1,3 +1,4 @@
+import { env } from "@/lib/env";
 import { FeedSchema, type Feed } from "@/lib/schema";
 import { readRaw } from "./raw";
 
@@ -7,15 +8,7 @@ import { readRaw } from "./raw";
  * or a filesystem path (local dev against the API's `--out-dir` output).
  */
 
-function feedUrl(): string {
-  const url = process.env.GOODSPEED_FEED_URL;
-  if (!url) {
-    throw new Error("GOODSPEED_FEED_URL is not set -- see web/.env.example");
-  }
-  return url;
-}
-
 /** Fetch and validate the latest SFBOFS point feed. */
 export async function fetchFeed(): Promise<Feed> {
-  return FeedSchema.parse(await readRaw(feedUrl()));
+  return FeedSchema.parse(await readRaw(env.GOODSPEED_FEED_URL));
 }

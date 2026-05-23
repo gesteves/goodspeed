@@ -8,6 +8,7 @@ import sys
 import threading
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from . import (
     catalog,
@@ -20,6 +21,9 @@ from . import (
     storage,
     web,
 )
+
+if TYPE_CHECKING:
+    import xarray as xr
 
 log = logging.getLogger(__name__)
 
@@ -48,8 +52,10 @@ def run_once(
             )
             return 0
 
-    nc_ds = fc_ds = None
-    nc_meta = fc_meta = None
+    nc_ds: xr.Dataset | None = None
+    fc_ds: xr.Dataset | None = None
+    nc_meta: fetcher.FetchMeta | None = None
+    fc_meta: fetcher.FetchMeta | None = None
     tried: list[str] = []
     for attempt in range(max_cycle_fallbacks):
         tried.append(cycle.iso())
@@ -60,13 +66,26 @@ def run_once(
             break
         except fetcher.FileNotAvailable as exc:
             log.warning("cycle.missing", extra={"cycle": cycle.iso(), "error": str(exc)})
+            # Release anything we opened on this attempt before the retry: the
+            # nowcast Dataset (and any download tempfile) would otherwise leak
+            # for the lifetime of the process when we fall back to the previous
+            # cycle.
+            fetcher.close_dataset(nc_ds, nc_meta)
+            fetcher.close_dataset(fc_ds, fc_meta)
+            nc_ds = fc_ds = nc_meta = fc_meta = None
             cycle = catalog.previous_cycle(cycle)
     else:
         log.error("cycle.exhausted", extra={"tried": tried})
         return 2
 
-    assert nc_ds is not None and fc_ds is not None
-    assert nc_meta is not None and fc_meta is not None
+    if nc_ds is None or fc_ds is None or nc_meta is None or fc_meta is None:
+        # Unreachable in practice: the for/else above returns on exhaustion and
+        # the break is reached only after both opens succeed. Defensive guard so
+        # we never deref None even if the loop is later edited.
+        log.error("fetch.invalid_state", extra={"tried": tried})
+        fetcher.close_dataset(nc_ds, nc_meta)
+        fetcher.close_dataset(fc_ds, fc_meta)
+        return 2
 
     try:
         station_idx = extract.find_station_index(nc_ds)
@@ -79,8 +98,8 @@ def run_once(
         nc_series = extract.extract_station_series(nc_ds, station_idx, surface_idx)
         fc_series = extract.extract_station_series(fc_ds, station_idx, surface_idx)
     finally:
-        nc_ds.close()
-        fc_ds.close()
+        fetcher.close_dataset(nc_ds, nc_meta)
+        fetcher.close_dataset(fc_ds, fc_meta)
 
     log.info(
         "extract.summary",
@@ -95,6 +114,17 @@ def run_once(
             "fetch_mode_forecast": fc_meta.mode,
         },
     )
+
+    if nc_meta.mode == "download" or fc_meta.mode == "download":
+        notify.slack_download_fallback(
+            {
+                "cycle": cycle.iso(),
+                "nowcast_mode": nc_meta.mode,
+                "forecast_mode": fc_meta.mode,
+                "nowcast_url": nc_meta.url,
+                "forecast_url": fc_meta.url,
+            }
+        )
 
     source_files = [cycle.filename("nowcast"), cycle.filename("forecast")]
     feed = output.build_feed(cycle, fetched_at, nc_series, fc_series, source_files)

@@ -5,7 +5,10 @@ description = "Goodspeed — SFBOFS SFB1204 station data fetcher + publisher for
 requires-python = ">=3.12,<3.13"
 readme = "README.md"
 dependencies = [
-    "xarray>=2024.10,<2025.99",
+    # xarray uses CalVer (YYYY.MM). Allow any 2024.10–2025.x; bump deliberately
+    # when 2026.x lands so a calendar-year transition doesn't slip in via a
+    # `uv lock --upgrade`.
+    "xarray>=2024.10,<2026",
     "netCDF4>=1.7.1,<1.8",
     "numpy>=2.1,<2.3",
     "jsonschema>=4.23,<5",

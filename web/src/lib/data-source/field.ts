@@ -1,23 +1,32 @@
+import { env } from "@/lib/env";
 import { FieldFeedSchema, type FieldFeed } from "@/lib/schema";
 import { readRaw } from "./raw";
+
+export type FieldStatus = "ok" | "unconfigured" | "failed";
+
+export interface FieldFeedResult {
+  feed: FieldFeed | null;
+  status: FieldStatus;
+}
 
 /**
  * The SFBOFS field (gridded) feed source. Server-only.
  *
- * Best-effort: returns `null` (and logs) on any failure -- a missing or
- * malformed field feed must not break the dashboard, only hide the map.
- * Reads `GOODSPEED_FIELD_FEED_URL`; if unset, returns null silently.
+ * Best-effort: distinguishes between "not configured" (no URL set; the dev
+ * hasn't wired the map up at all) and "configured but the fetch failed"
+ * (intermittent NOAA / API outage). The dashboard renders a brief notice in
+ * the second case so users know a feature is degraded rather than missing.
  */
-export async function fetchFieldFeed(): Promise<FieldFeed | null> {
-  const url = process.env.GOODSPEED_FIELD_FEED_URL;
-  if (!url) return null;
+export async function fetchFieldFeed(): Promise<FieldFeedResult> {
+  const url = env.GOODSPEED_FIELD_FEED_URL;
+  if (!url) return { feed: null, status: "unconfigured" };
   try {
-    return FieldFeedSchema.parse(await readRaw(url));
+    return { feed: FieldFeedSchema.parse(await readRaw(url)), status: "ok" };
   } catch (err) {
     console.warn(
-      "fetchFieldFeed failed; map will be hidden:",
+      "fetchFieldFeed failed; map will show an unavailable notice:",
       err instanceof Error ? err.message : err,
     );
-    return null;
+    return { feed: null, status: "failed" };
   }
 }

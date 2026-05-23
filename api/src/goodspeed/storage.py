@@ -13,7 +13,9 @@ import json
 import logging
 import os
 import uuid
+from dataclasses import dataclass
 from pathlib import Path
+from typing import Literal
 
 log = logging.getLogger(__name__)
 
@@ -67,7 +69,49 @@ def _write_atomic(body: bytes, out_dir: Path, name: str) -> dict[str, str]:
     return {"path": str(target)}
 
 
-# ---- skip-check (point feed only) -------------------------------------------
+# ---- probing the published feeds --------------------------------------------
+
+
+ProbeState = Literal["missing", "broken", "ok"]
+
+
+@dataclass(slots=True)
+class FeedProbe:
+    """Result of inspecting a published feed file on disk.
+
+    * ``missing`` — the file isn't there yet (fresh deploy, no run completed).
+    * ``broken`` — the file exists but can't be read / parsed / has no cycle.
+    * ``ok`` — file present, parsed, and has a ``model.cycle`` string.
+
+    ``cycle`` is set only in the ``ok`` state; ``error`` only in ``broken``.
+    """
+
+    state: ProbeState
+    cycle: str | None = None
+    error: str | None = None
+
+
+def probe_feed(out_dir: Path, key: str) -> FeedProbe:
+    """Inspect ``out_dir/key`` and report its state + parsed cycle.
+
+    Never raises: any I/O or parse failure is captured into ``state="broken"``.
+    Used by ``healthz`` to distinguish "still warming" from "feed corrupted",
+    and by :func:`read_published_cycle` for the skip-check.
+    """
+    try:
+        path = out_dir.expanduser().resolve() / key
+        if not path.is_file():
+            return FeedProbe(state="missing")
+        cycle = json.loads(path.read_bytes()).get("model", {}).get("cycle")
+        if isinstance(cycle, str):
+            return FeedProbe(state="ok", cycle=cycle)
+        return FeedProbe(state="broken", error="model.cycle missing or non-string")
+    except Exception as exc:  # noqa: BLE001 - never break the run/health check
+        log.warning(
+            "storage.probe_failed",
+            extra={"key": key, "error": f"{type(exc).__name__}: {exc}"},
+        )
+        return FeedProbe(state="broken", error=f"{type(exc).__name__}: {exc}")
 
 
 def read_published_cycle(out_dir: Path) -> str | None:
@@ -79,15 +123,4 @@ def read_published_cycle(out_dir: Path) -> str | None:
     raise: a failure here should only ever cost an unnecessary fetch, never a
     run.
     """
-    try:
-        path = out_dir.expanduser().resolve() / LATEST_KEY
-        if not path.is_file():
-            return None
-        cycle = json.loads(path.read_bytes()).get("model", {}).get("cycle")
-        return cycle if isinstance(cycle, str) else None
-    except Exception as exc:  # noqa: BLE001 - this optimization must never break a run
-        log.warning(
-            "storage.cycle_probe_failed",
-            extra={"error": f"{type(exc).__name__}: {exc}"},
-        )
-        return None
+    return probe_feed(out_dir, LATEST_KEY).cycle

@@ -82,3 +82,39 @@ def test_safe_run_silent_on_success(monkeypatch):
 
     main._safe_run(None)
     assert sent == []
+
+
+def test_slack_download_fallback_posts_once_per_process(monkeypatch):
+    """A first download-fallback notifies; subsequent ones in the same process are silent."""
+    monkeypatch.setenv("SLACK_WEBHOOK_URL", "https://hooks.slack.test/abc")
+    monkeypatch.setattr(notify, "_download_fallback_notified", False)
+    calls: list[dict] = []
+
+    class _Resp:
+        def raise_for_status(self):
+            pass
+
+    def _post(url, json, timeout):
+        calls.append({"url": url, "json": json})
+        return _Resp()
+
+    monkeypatch.setattr(notify.requests, "post", _post)
+
+    notify.slack_download_fallback({"cycle": "2026-05-22T21:00:00Z"})
+    notify.slack_download_fallback({"cycle": "2026-05-22T21:00:00Z"})
+    notify.slack_download_fallback({"cycle": "2026-05-23T03:00:00Z"})
+
+    assert len(calls) == 1
+    assert calls[0]["json"]["attachments"][0]["color"] == "warning"
+    assert "OPeNDAP fallback" in calls[0]["json"]["text"]
+
+
+def test_slack_download_fallback_noop_without_webhook(monkeypatch):
+    monkeypatch.delenv("SLACK_WEBHOOK_URL", raising=False)
+    monkeypatch.setattr(notify, "_download_fallback_notified", False)
+
+    def _no_post(*a, **k):
+        raise AssertionError("must not POST when the webhook is unset")
+
+    monkeypatch.setattr(notify.requests, "post", _no_post)
+    notify.slack_download_fallback({"cycle": "X"})

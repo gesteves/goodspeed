@@ -1,21 +1,32 @@
 import type { TimeseriesPoint } from "@/lib/schema";
 
-/** Index of the timeseries point closest to `now`. */
-export function findNowIndex(
-  ts: TimeseriesPoint[],
-  now: Date = new Date(),
+/** Index of the ISO-8601 timestamp in `times` closest to `target`. */
+export function nearestTimeIndex(
+  times: readonly string[],
+  target: Date = new Date(),
 ): number {
-  const target = now.getTime();
+  const t = target.getTime();
   let best = 0;
   let bestDiff = Infinity;
-  for (let i = 0; i < ts.length; i++) {
-    const diff = Math.abs(new Date(ts[i].t).getTime() - target);
+  for (let i = 0; i < times.length; i++) {
+    const diff = Math.abs(new Date(times[i]).getTime() - t);
     if (diff < bestDiff) {
       bestDiff = diff;
       best = i;
     }
   }
   return best;
+}
+
+/** Index of the timeseries point closest to `now`. */
+export function findNowIndex(
+  ts: TimeseriesPoint[],
+  now: Date = new Date(),
+): number {
+  return nearestTimeIndex(
+    ts.map((p) => p.t),
+    now,
+  );
 }
 
 /** Direction the water level is moving around `index`. */

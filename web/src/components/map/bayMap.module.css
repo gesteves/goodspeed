@@ -92,3 +92,16 @@
   font-variant-numeric: tabular-nums;
   font-size: 0.72rem;
 }
+
+/* Shown when the field feed failed to load. Same width as the map so the page
+   layout doesn't shift between healthy and degraded states. */
+.unavailable {
+  width: 100%;
+  padding: 14px 16px;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  color: var(--text-muted);
+  font-size: 0.86rem;
+  text-align: center;
+}
