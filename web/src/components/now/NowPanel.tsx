@@ -32,9 +32,7 @@ export function NowPanel({ now, point, trend, nextTide }: NowPanelProps) {
   const wind = readMetric(point, METRICS.windSpeed, units);
 
   const tideSub = nextTide
-    ? `${nextTide.type === "high" ? "next high" : "next low"} ~${formatClock(
-        nextTide.t,
-      )}`
+    ? `${nextTide.type === "high" ? "High" : "Low"} at ${formatClock(nextTide.t)}`
     : null;
 
   return (
@@ -60,7 +58,7 @@ export function NowPanel({ now, point, trend, nextTide }: NowPanelProps) {
           sub={
             <>
               {TREND_LABEL[trend]}
-              {tideSub ? `, ${tideSub}` : ""}
+              {tideSub ? ` · ${tideSub}` : ""}
             </>
           }
         />
@@ -69,9 +67,7 @@ export function NowPanel({ now, point, trend, nextTide }: NowPanelProps) {
           accent="var(--chart-wind)"
           value={formatNumber(wind, 1)}
           unit={unitField(METRICS.windSpeed, units).unit}
-          sub={`${Math.round(point.wind_bearing_deg)}° from the ${compass16(
-            point.wind_bearing_deg,
-          )}`}
+          sub={`From the ${compass16(point.wind_bearing_deg)}`}
         />
       </div>
     </section>

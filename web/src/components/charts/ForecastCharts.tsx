@@ -200,7 +200,7 @@ function ChartStack({
         readout={
           <DirectionReadout
             degrees={Math.round(dp.current_bearing_deg)}
-            relation="toward"
+            relation="towards"
             compass={compass16(dp.current_bearing_deg)}
             arrowBearing={dp.current_bearing_deg}
             color="var(--chart-current)"
