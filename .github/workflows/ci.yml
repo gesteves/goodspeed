@@ -4,13 +4,13 @@ on:
   push:
     branches: ["*"]
     paths:
-      - "worker/**"
+      - "api/**"
       - "schema/**"
       - ".github/workflows/ci.yml"
   pull_request:
     branches: [main]
     paths:
-      - "worker/**"
+      - "api/**"
       - "schema/**"
       - ".github/workflows/ci.yml"
 
@@ -27,7 +27,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: worker
+        working-directory: api
 
     steps:
       - name: Checkout code
@@ -78,10 +78,10 @@ jobs:
           webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
           webhook-type: incoming-webhook
           payload: |
-            text: "Worker tests passed on <${{ env.BRANCH_URL }}|`${{ env.BRANCH_NAME }}`>"
+            text: "API tests passed on <${{ env.BRANCH_URL }}|`${{ env.BRANCH_NAME }}`>"
             attachments:
               - color: "good"
-                fallback: "Worker tests passed on ${{ env.BRANCH_NAME }}"
+                fallback: "API tests passed on ${{ env.BRANCH_NAME }}"
                 text: "<${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|`${{ env.SHORT_SHA }}`> - ${{ env.COMMIT_MESSAGE }}"
                 footer: "<${{ github.server_url }}/${{ github.repository }}|${{ github.repository }}> · <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View workflow>"
 
@@ -93,15 +93,15 @@ jobs:
           webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
           webhook-type: incoming-webhook
           payload: |
-            text: "Worker tests <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|failed> on <${{ env.BRANCH_URL }}|`${{ env.BRANCH_NAME }}`>"
+            text: "API tests <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|failed> on <${{ env.BRANCH_URL }}|`${{ env.BRANCH_NAME }}`>"
             attachments:
               - color: "danger"
-                fallback: "Worker tests failed on ${{ env.BRANCH_NAME }}"
+                fallback: "API tests failed on ${{ env.BRANCH_NAME }}"
                 text: "<${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|`${{ env.SHORT_SHA }}`> - ${{ env.COMMIT_MESSAGE }}"
                 footer: "<${{ github.server_url }}/${{ github.repository }}|${{ github.repository }}> · <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View workflow>"
 
   deploy:
-    name: Deploy worker
+    name: Deploy API
     runs-on: ubuntu-latest
     needs: test
     concurrency: deploy-group
@@ -118,10 +118,10 @@ jobs:
           webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
           webhook-type: incoming-webhook
           payload: |
-            text: "Worker deploy <https://fly.io/apps/gdspd-worker/monitoring|starting> :hourglass_flowing_sand:"
+            text: "API deploy <https://fly.io/apps/goodspeed-api/monitoring|starting> :hourglass_flowing_sand:"
             attachments:
               - color: "#439FE0"
-                fallback: "Worker deploy starting: https://fly.io/apps/gdspd-worker/monitoring"
+                fallback: "API deploy starting: https://fly.io/apps/goodspeed-api/monitoring"
                 text: "<${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|`${{ env.SHORT_SHA }}`> - ${{ github.event.head_commit.message }}"
                 footer: "<${{ github.server_url }}/${{ github.repository }}|${{ github.repository }}> · <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View workflow>"
 
@@ -130,7 +130,7 @@ jobs:
 
       - name: Deploy to Fly.io
         id: fly_deploy
-        run: flyctl deploy --remote-only --config worker/fly.toml --dockerfile worker/Dockerfile
+        run: flyctl deploy --remote-only --config api/fly.toml --dockerfile api/Dockerfile
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
 
@@ -142,10 +142,10 @@ jobs:
           webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
           webhook-type: incoming-webhook
           payload: |
-            text: "Worker deploy successful :rocket:"
+            text: "API deploy successful :rocket:"
             attachments:
               - color: "good"
-                fallback: "Worker deploy successful: ${{ env.PRODUCTION_URL }}"
+                fallback: "API deploy successful: ${{ env.PRODUCTION_URL }}"
                 text: "<${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|`${{ env.SHORT_SHA }}`> - ${{ github.event.head_commit.message }}"
                 footer: "<${{ github.server_url }}/${{ github.repository }}|${{ github.repository }}> · <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View workflow>"
 
@@ -157,9 +157,9 @@ jobs:
           webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
           webhook-type: incoming-webhook
           payload: |
-            text: "Worker deploy <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|failed> :warning:"
+            text: "API deploy <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|failed> :warning:"
             attachments:
               - color: "danger"
-                fallback: "Worker deploy failed: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+                fallback: "API deploy failed: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
                 text: "<${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|`${{ env.SHORT_SHA }}`> - ${{ github.event.head_commit.message }}"
                 footer: "<${{ github.server_url }}/${{ github.repository }}|${{ github.repository }}> · <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View workflow>"

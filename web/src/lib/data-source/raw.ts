@@ -9,8 +9,8 @@ import { fileURLToPath } from "node:url";
  */
 export async function readRaw(src: string): Promise<unknown> {
   if (src.startsWith("http://") || src.startsWith("https://")) {
-    // Server-side fetch: no S3 CORS concern. Cached for 5 min to match the
-    // feed's own Cache-Control and the worker's ~hourly cadence.
+    // Server-side fetch: no CORS concern. Cached for 5 min to match the
+    // feed's own Cache-Control and the API's ~hourly cadence.
     const res = await fetch(src, { next: { revalidate: 300 } });
     if (!res.ok) {
       throw new Error(`Feed fetch failed: ${res.status} ${res.statusText}`);

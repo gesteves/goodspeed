@@ -1,10 +1,11 @@
-"""CLI entrypoint: one-off run or long-running scheduler."""
+"""CLI entrypoint: one-off run, or long-running scheduler + HTTP server."""
 
 from __future__ import annotations
 
 import argparse
 import logging
 import sys
+import threading
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -17,13 +18,14 @@ from . import (
     notify,
     output,
     storage,
+    web,
 )
 
 log = logging.getLogger(__name__)
 
 
 def run_once(
-    out_dir: Path | None = None,
+    out_dir: Path,
     max_cycle_fallbacks: int = 2,
     force: bool = False,
 ) -> int:
@@ -38,7 +40,7 @@ def run_once(
     cycle = catalog.latest_ready_cycle(fetched_at)
 
     if not force:
-        published = storage.read_published_cycle(out_dir=out_dir)
+        published = storage.read_published_cycle(out_dir)
         if published == cycle.iso():
             log.info(
                 "run.skipped",
@@ -103,7 +105,7 @@ def run_once(
     output.validate_against_schema(feed)
     body = output.serialize(feed)
 
-    locations = storage.push_feed(body, cycle.iso(), out_dir=out_dir)
+    locations = storage.push_feed(body, out_dir)
     log.info(
         "run.complete",
         extra={
@@ -135,7 +137,7 @@ def run_once(
 def _publish_field_feed(
     cycle: catalog.Cycle,
     fetched_at: datetime,
-    out_dir: Path | None,
+    out_dir: Path,
 ) -> None:
     """Build and publish the gridded field feed for the bay map.
 
@@ -172,7 +174,7 @@ def _publish_field_feed(
         log.warning("field.sanity.bounds", extra={"warning": warning})
     output.validate_field_against_schema(field_feed)
     body = output.serialize(field_feed)
-    locations = storage.push_field_feed(body, cycle.iso(), out_dir=out_dir)
+    locations = storage.push_field_feed(body, out_dir)
     log.info(
         "field.complete",
         extra={
@@ -186,35 +188,58 @@ def _publish_field_feed(
 
 
 def serve(out_dir: Path | None = None) -> int:
-    """Long-running scheduler: fire run_once hourly, on the hour, UTC.
+    """Long-running process: hourly scheduler + Starlette HTTP server.
+
+    The scheduler runs in a background thread (APScheduler ``BackgroundScheduler``);
+    uvicorn owns the main asyncio loop. Both touch the same on-disk JSON files
+    via :mod:`goodspeed.storage`; reads are concurrent-safe because writes are
+    atomic (tmp file + rename).
 
     NOAA only publishes the SFBOFS model four times a day, but the exact
     publish times aren't guaranteed. Polling hourly keeps the feed fresh
-    regardless of when a new cycle lands; run_once is idempotent — when the
-    latest cycle hasn't changed it just republishes the same data.
+    regardless of when a new cycle lands; ``run_once`` is idempotent — when the
+    latest cycle hasn't changed it just exits.
     """
-    from apscheduler.schedulers.blocking import BlockingScheduler
+    import uvicorn
+    from apscheduler.schedulers.background import BackgroundScheduler
     from apscheduler.triggers.cron import CronTrigger
 
-    scheduler = BlockingScheduler(timezone="UTC")
+    resolved = out_dir if out_dir is not None else web.out_dir()
+    resolved.mkdir(parents=True, exist_ok=True)
+    log.info("serve.out_dir", extra={"path": str(resolved)})
+
+    # Warm the volume in a thread so a fresh deploy starts serving (with a
+    # brief 404 window for /latest.json) without blocking the HTTP server.
+    threading.Thread(
+        target=_safe_run,
+        args=(resolved,),
+        name="goodspeed-warmup",
+        daemon=True,
+    ).start()
+
+    scheduler = BackgroundScheduler(timezone="UTC")
     trigger = CronTrigger(minute=0, timezone="UTC")
     scheduler.add_job(
-        lambda: _safe_run(out_dir),
+        lambda: _safe_run(resolved),
         trigger=trigger,
         id="goodspeed-fetch",
         max_instances=1,
         coalesce=True,
         misfire_grace_time=60 * 30,
     )
-    log.info("scheduler.starting", extra={"cron": "0 * * * * UTC"})
+    scheduler.start()
+    log.info("scheduler.started", extra={"cron": "0 * * * * UTC"})
+
     try:
-        scheduler.start()
+        uvicorn.run(web.app, host="0.0.0.0", port=8080, log_config=None)
     except (KeyboardInterrupt, SystemExit):
-        log.info("scheduler.stopped")
+        log.info("server.stopped")
+    finally:
+        scheduler.shutdown(wait=False)
     return 0
 
 
-def _safe_run(out_dir: Path | None) -> None:
+def _safe_run(out_dir: Path) -> None:
     try:
         rc = run_once(out_dir=out_dir)
         if rc != 0:
@@ -242,8 +267,8 @@ def cli(argv: list[str] | None = None) -> int:
     run_p.add_argument(
         "--out-dir",
         type=Path,
-        default=None,
-        help="Write JSON to this local directory instead of S3.",
+        required=True,
+        help="Directory to write JSON to.",
     )
     run_p.add_argument(
         "--force",
@@ -251,12 +276,17 @@ def cli(argv: list[str] | None = None) -> int:
         help="Fetch and republish even if the latest cycle is already published.",
     )
 
-    serve_p = sub.add_parser("serve", help="Long-running scheduler (Fly Machine entrypoint).")
+    serve_p = sub.add_parser(
+        "serve", help="Long-running scheduler + HTTP server (Fly Machine entrypoint)."
+    )
     serve_p.add_argument(
         "--out-dir",
         type=Path,
         default=None,
-        help="If set, scheduled runs write to this local directory instead of S3.",
+        help=(
+            "Directory to read/write JSON. Defaults to $GOODSPEED_OUT_DIR or "
+            f"{web.DEFAULT_OUT_DIR} (the Fly Volume in production)."
+        ),
     )
 
     args = parser.parse_args(argv)

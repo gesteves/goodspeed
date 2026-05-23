@@ -1,0 +1,55 @@
+# Fly app config for the Goodspeed API (SFBOFS / SFB1204 fetcher + feed server).
+#
+# Deploy from the repo root so the Docker build context includes both
+# api/ and schema/:
+#
+#   fly deploy --config api/fly.toml --dockerfile api/Dockerfile
+#
+# The single `serve` process runs the hourly fetch scheduler AND a Starlette
+# HTTP server (port 8080) that serves the published JSON feeds straight off
+# the Fly Volume mounted at /data. The Next.js dashboard fetches:
+#
+#   https://goodspeed-api.fly.dev/latest.json
+#   https://goodspeed-api.fly.dev/field-latest.json
+#
+# Optional secrets:
+#   SLACK_WEBHOOK_URL  - if set, a failed scheduled run posts an alert here.
+
+app = "goodspeed-api"
+primary_region = "iad"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  TZ = "UTC"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"
+
+[processes]
+  app = "serve"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = "off"
+  auto_start_machines = true
+  min_machines_running = 1
+  processes = ["app"]
+
+  [[http_service.checks]]
+    grace_period = "30s"
+    interval = "30s"
+    method = "GET"
+    timeout = "5s"
+    path = "/healthz"
+
+# Persistent volume for the published JSON. The scheduler writes here and the
+# HTTP server reads from it; survives machine restarts so we don't serve 404s
+# during the warm-up after a deploy.
+[[mounts]]
+  source = "goodspeed_api_data"
+  destination = "/data"
+  initial_size = "1gb"

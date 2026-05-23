@@ -11,7 +11,7 @@ import {
 /**
  * Guards against drift between the Zod schema and the shared JSON Schema
  * contract. The JSON Schema (in the repo's `schema/` directory) is the source
- * of truth; if the worker changes the feed shape, this test fails until
+ * of truth; if the API changes the feed shape, this test fails until
  * `schema.ts` is updated to match.
  */
 

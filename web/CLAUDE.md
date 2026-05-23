@@ -3,7 +3,7 @@
 # Goodspeed web dashboard
 
 Next.js (App Router) dashboard that renders the swim-conditions feed published by
-`../worker/` for NOAA SFBOFS station SFB1204 (SW of Alcatraz Island — the Escape from
+`../api/` for NOAA SFBOFS station SFB1204 (SW of Alcatraz Island — the Escape from
 Alcatraz swim route, Alcatraz → Marina District).
 
 ## Commands
@@ -28,8 +28,8 @@ Use Node LTS (`nvm use` reads `.nvmrc`).
 - `src/lib/derive/` — pure functions over the timeseries (tide highs/lows, "now"
   point, current flood/ebb, staleness). Unit-tested.
 - `src/app/page.tsx` — Server Component: fetches + derives, then hands serializable
-  props to client components. The feed fetch is server-side (no S3 CORS) and cached
-  for 5 min (`next: { revalidate: 300 }`), matching the feed's own cache.
+  props to client components. The feed fetch is server-side (no CORS concern) and
+  cached for 5 min (`next: { revalidate: 300 }`), matching the feed's own cache.
 - `src/components/` — `Header`, `NowPanel` (current readings), `charts/` (visx
   forecast charts). Units (imperial/metric) and theme (system/light/dark) are
   cookie-backed client context so the server renders the right choice with no flash.
@@ -55,4 +55,4 @@ Use Node LTS (`nvm use` reads `.nvmrc`).
 Hosted on Netlify with the standard Git-triggered build flow. Netlify runs
 `npm run check && npm run build` on every push; `check` is
 `lint && typecheck && test`, so any failure blocks the deploy. The repo's
-`../.github/workflows/ci.yml` only covers the worker (deploy to Fly.io).
+`../.github/workflows/ci.yml` only covers the API (deploy to Fly.io).

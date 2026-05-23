@@ -3,8 +3,8 @@ import { readRaw } from "./raw";
 
 /**
  * The SFBOFS point feed source. Server-only -- reads `GOODSPEED_FEED_URL`,
- * which may be an http(s) URL (production S3/CDN), a file: URL, or a
- * filesystem path (local dev against the worker's `--out-dir` output).
+ * which may be an http(s) URL (production: the Fly API app), a file: URL,
+ * or a filesystem path (local dev against the API's `--out-dir` output).
  */
 
 function feedUrl(): string {

@@ -41,7 +41,7 @@ def slack_failure(event: str, detail: dict[str, object]) -> None:
     try:
         resp = requests.post(webhook, json=payload, timeout=POST_TIMEOUT_S)
         resp.raise_for_status()
-    except Exception as exc:  # noqa: BLE001 - alerting must never break the worker
+    except Exception as exc:  # noqa: BLE001 - alerting must never break the run
         log.warning(
             "notify.slack_failed",
             extra={"event": event, "error": f"{type(exc).__name__}: {exc}"},

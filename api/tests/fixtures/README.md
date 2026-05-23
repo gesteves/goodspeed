@@ -17,7 +17,7 @@ Pick any recent cycle; the schema doesn't change between cycles. From the
 repo root:
 
 ```sh
-curl -o worker/tests/fixtures/sfbofs_stations_nowcast.nc \
+curl -o api/tests/fixtures/sfbofs_stations_nowcast.nc \
   "https://opendap.co-ops.nos.noaa.gov/thredds/fileServer/NOAA/SFBOFS/MODELS/YYYY/MM/DD/sfbofs.tHHz.YYYYMMDD.stations.nowcast.nc"
 ```
 

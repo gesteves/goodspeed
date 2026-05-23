@@ -3,13 +3,13 @@ import type { UnitSystem } from "./units/units";
 /**
  * Temperature -> CSS color ramp for the bay map.
  *
- * Fixed °C domain matches the worker's water-temperature sanity bounds and
+ * Fixed °C domain matches the API's water-temperature sanity bounds and
  * gives stable color semantics across cycles (56 °F looks the same color
  * tomorrow as it does today). Stops are in OKLCH for a perceptually-smooth
  * gradient that reads as cool-blue -> teal -> warm-orange.
  */
 
-// 55-65 °F, expressed in °C for the worker/feed-side data.
+// 55-65 °F, expressed in °C for the API/feed-side data.
 // 55 °F ≈ 12.778 °C, 65 °F ≈ 18.333 °C.
 export const TEMP_DOMAIN_C: readonly [number, number] = [12.778, 18.333];
 

@@ -41,7 +41,7 @@ def test_slack_failure_posts_when_webhook_set(monkeypatch):
 
 
 def test_slack_failure_swallows_post_errors(monkeypatch):
-    """A failing POST is logged, never raised — alerting can't break the worker."""
+    """A failing POST is logged, never raised — alerting can't break the run."""
     monkeypatch.setenv("SLACK_WEBHOOK_URL", "https://hooks.slack.test/abc")
 
     def _post(*a, **k):

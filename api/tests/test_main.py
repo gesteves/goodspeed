@@ -19,7 +19,7 @@ def _raise_missing(cycle, kind, *a, **k):
 def test_run_once_skips_when_cycle_already_published(tmp_path, monkeypatch):
     """When the latest cycle is already published, the heavy fetch is skipped."""
     cycle = _patch_cycle(monkeypatch)
-    monkeypatch.setattr(main.storage, "read_published_cycle", lambda **k: cycle.iso())
+    monkeypatch.setattr(main.storage, "read_published_cycle", lambda *a, **k: cycle.iso())
 
     def _no_fetch(*a, **k):
         raise AssertionError("open_dataset must not run when the cycle is current")
@@ -32,7 +32,7 @@ def test_run_once_fetches_when_cycle_is_new(tmp_path, monkeypatch):
     """A newer ready cycle than what's published → the fetch path runs."""
     _patch_cycle(monkeypatch)
     monkeypatch.setattr(
-        main.storage, "read_published_cycle", lambda **k: "2026-05-22T09:00:00Z"
+        main.storage, "read_published_cycle", lambda *a, **k: "2026-05-22T09:00:00Z"
     )
     monkeypatch.setattr(main.fetcher, "open_dataset", _raise_missing)
     # New cycle → fetch is attempted; with every file reading as missing the run
@@ -45,7 +45,7 @@ def test_run_once_force_skips_cycle_probe(tmp_path, monkeypatch):
     _patch_cycle(monkeypatch)
     probed: list[bool] = []
 
-    def _probe(**k):
+    def _probe(*a, **k):
         probed.append(True)
         return "2026-05-22T15:00:00Z"
 

@@ -1,22 +1,21 @@
-# Goodspeed Worker
+# Goodspeed API
 
 Python service that pulls SFBOFS model output from NOAA, extracts surface
-conditions for station **SFB1204** (SW of Alcatraz Island), and publishes a
-JSON feed. The `web/` dashboard consumes that feed; the JSON contract lives in
-`../schema/sfbofs-sfb1204.schema.json`.
+conditions for station **SFB1204** (SW of Alcatraz Island), and serves the
+resulting JSON feed over HTTP. The `web/` dashboard consumes that feed; the
+JSON contract lives in `../schema/sfbofs-sfb1204.schema.json`.
 
 ## Commands
 
-All commands run from `worker/` and use `uv`.
+All commands run from `api/` and use `uv`.
 
 ```sh
 uv sync --extra dev                              # install deps (incl. dev)
 uv run pytest -q                                 # tests
 uv run ruff check src tests                      # lint (CI-gated; must pass)
 uv run ruff check --fix src tests                # autofix lint
-uv run python -m goodspeed.main run --out-dir ../output   # one-off local run, no AWS
-uv run --env-file .env python -m goodspeed.main run       # one-off run against S3
-uv run python -m goodspeed.main serve --out-dir ../output # run the scheduler locally
+uv run python -m goodspeed.main run --out-dir ../output   # one-off local run
+uv run python -m goodspeed.main serve --out-dir ../output # scheduler + HTTP server (port 8080)
 ```
 
 `run` takes `--force` to fetch/republish even when the cycle is unchanged.
@@ -37,17 +36,25 @@ uv run python -m goodspeed.main serve --out-dir ../output # run the scheduler lo
 - **`output.py`** — derives bearings/speeds, converts units, assembles the
   feed dict, runs `sanity_check()`, and validates against the JSON Schema
   (`Draft202012Validator`) before publishing.
-- **`storage.py`** — publishes `latest.json` + `runs/sfbofs-sfb1204-<cycle>.json`.
-  Routing: `--out-dir` → local files; else `S3_BUCKET` set → S3; else
-  `./output/` with a warning. Also `read_published_cycle()` for the skip check.
-- **`main.py`** — CLI (`run` / `serve`) and the scheduler.
+- **`storage.py`** — writes `latest.json` and `field-latest.json` to the
+  out-dir (atomic: tmp file + `os.replace`). Also `read_published_cycle()` for
+  the skip check.
+- **`web.py`** — Starlette app exposing `/latest.json`, `/field-latest.json`,
+  and `/healthz`. Reads from the same out-dir the scheduler writes to.
+- **`main.py`** — CLI (`run` / `serve`). `serve` runs the scheduler in a
+  background thread and uvicorn in the main thread on :8080.
 - **`notify.py`** — best-effort Slack alert on scheduled-run failure.
 - **`logging_config.py`** — all logs are one JSON object per line on stdout.
 
-## The scheduler
+## The scheduler + server
 
-`serve` runs an APScheduler `BlockingScheduler` firing `run_once` hourly on the
-hour UTC — it's the Fly Machine entrypoint (`fly.toml`, app `gdspd-worker`).
+`serve` is the Fly Machine entrypoint (`fly.toml`, app `goodspeed-api`). One
+process runs two things:
+
+1. An APScheduler `BackgroundScheduler` fires `run_once` hourly on the hour
+   UTC (daemon thread). A warm-up `run_once` is also kicked off in a thread at
+   startup so a freshly deployed machine populates the volume immediately.
+2. Uvicorn serves the Starlette app from `web.py` on :8080 in the main thread.
 
 Hourly polling is intentional: NOAA's 4 daily cycles don't land at exact times.
 Each run first compares the latest ready cycle to the cycle in the published
@@ -56,6 +63,9 @@ downloading the large NetCDF files. So ~20 runs/day are cheap no-ops.
 
 `_safe_run` wraps `run_once` and, on a non-zero rc (`scheduled_run.failed`) or
 an exception (`scheduled_run.exception`), posts a Slack alert via `notify.py`.
+
+Writes are atomic (tmp file in the same directory, then `os.replace`) so a
+concurrent HTTP read never observes a partial file.
 
 ## Conventions & gotchas
 
@@ -75,8 +85,9 @@ an exception (`scheduled_run.exception`), posts a Slack alert via `notify.py`.
 
 Env vars / Fly secrets:
 
-- `S3_BUCKET`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION` —
-  required for S3 publishing in production.
+- `GOODSPEED_OUT_DIR` — directory where `serve` reads/writes the JSON. Defaults
+  to `/data` (the Fly Volume mount). The `run` subcommand takes `--out-dir`
+  explicitly.
 - `SLACK_WEBHOOK_URL` — *optional*; when set, failed scheduled runs alert here.
   Unset locally and in tests (alerting is then a silent no-op).
 - `GOODSPEED_SCHEMA_PATH` — overrides schema lookup (set in the Docker image).
@@ -85,4 +96,4 @@ Env vars / Fly secrets:
 
 GitHub Actions (`.github/workflows/ci.yml`): lint → test → deploy to Fly on
 push to `main`. Deploy from the repo root so the build context includes both
-`worker/` and `schema/`. Add `[skip deploy]` to a commit message to skip it.
+`api/` and `schema/`. Add `[skip deploy]` to a commit message to skip it.

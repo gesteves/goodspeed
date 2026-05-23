@@ -9,8 +9,7 @@ export default function Error({ reset }: { error: Error; reset: () => void }) {
         <h1 className={styles.title}>Conditions unavailable</h1>
         <p className={styles.body}>
           The feed couldn&rsquo;t be loaded right now. This usually
-          clears up on its own — the worker refreshes the data a few times a
-          day.
+          clears up on its own — the data refreshes a few times a day.
         </p>
         <button type="button" className={styles.button} onClick={reset}>
           Try again
