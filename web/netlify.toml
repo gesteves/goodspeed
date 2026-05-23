@@ -1,0 +1,41 @@
+# Netlify config for the Goodspeed web dashboard.
+#
+# This is the single source of truth for the dashboard's Netlify settings.
+# It lives in `web/` (not the repo root) for two reasons:
+#
+# 1. When the Netlify site is configured with `base = "web"` (in the dashboard,
+#    "Site configuration → Build & deploy → Build settings"), Netlify reads the
+#    netlify.toml in the base directory and ignores any file at the repo root.
+# 2. `@netlify/dev` (started by `@astrojs/netlify` during `astro dev`) needs a
+#    netlify.toml in the project root, or it walks up to the repo and
+#    mis-resolves `base = "web"` against the current directory.
+#
+# Put a netlify.toml here, and both CI and `astro dev` agree on the same
+# config.
+#
+# Node version comes from web/.nvmrc (lts/*).
+
+[build]
+  command = "npm run check && npm run build"
+  # `@astrojs/netlify` writes static assets to web/dist/ and the SSR function
+  # bundle to web/.netlify/v1/functions/ssr/. Netlify picks the function up
+  # automatically from the .netlify directory; we just need to point `publish`
+  # at the static assets.
+  publish = "dist"
+
+# Plausible analytics proxy. Per https://plausible.io/docs/proxy/guides/netlify
+# -- the script and event endpoint are served from this domain so the analytics
+# requests aren't blocked by ad blockers / privacy extensions, while the data
+# still goes to plausible.io. Both rewrites use status 200 (proxy, not a 301).
+# `force = true` on /api/event wins over the Astro adapter's catch-all
+# function route so events still post through to plausible.io.
+[[redirects]]
+  from = "/js/pa-Ql_GCQ3RubH8FjaceAlmn.js"
+  to = "https://plausible.io/js/pa-Ql_GCQ3RubH8FjaceAlmn.js"
+  status = 200
+
+[[redirects]]
+  from = "/api/event"
+  to = "https://plausible.io/api/event"
+  status = 200
+  force = true

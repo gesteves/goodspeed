@@ -1,0 +1,28 @@
+---
+import Layout from "@/layouts/Layout.astro";
+import { Dashboard } from "@/components/Dashboard";
+import { getDashboardData } from "@/lib/data-source";
+import styles from "@/styles/page.module.css";
+
+const { feed, field, fieldStatus } = await getDashboardData();
+const { theme, units } = Astro.locals;
+---
+
+<Layout initialTheme={theme}>
+  <div class={styles.page}>
+    <a href="#main" class={styles.skipLink}>Skip to main content</a>
+    <main id="main" class={styles.main}>
+      <Dashboard
+        client:load
+        initialData={{ feed, field, fieldStatus }}
+        initialTheme={theme}
+        initialUnits={units}
+      />
+      <footer class={styles.footer}>
+        Modeled data from the NOAA San Francisco Bay Operational Forecast
+        System, station {feed.station.id}. These are model estimates, not
+        measurements, and not swim advice. Use at your own risk.
+      </footer>
+    </main>
+  </div>
+</Layout>

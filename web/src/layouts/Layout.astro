@@ -1,0 +1,59 @@
+---
+import "@fontsource-variable/geist/index.css";
+import "@fontsource-variable/geist-mono/index.css";
+import "@/styles/globals.css";
+import type { Theme } from "@/lib/preferences";
+
+interface Props {
+  initialTheme: Theme;
+  title?: string;
+  description?: string;
+}
+
+const {
+  initialTheme,
+  title = "Alcatraz Swim Conditions",
+  description = "Modeled water temperature, currents, tide, and wind for the Alcatraz-to-Marina swim route.",
+} = Astro.props;
+---
+
+<!doctype html>
+<html
+  lang="en"
+  data-theme={initialTheme === "system" ? undefined : initialTheme}
+>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <meta
+      name="theme-color"
+      media="(prefers-color-scheme: light)"
+      content="#e9eef2"
+    />
+    <meta
+      name="theme-color"
+      media="(prefers-color-scheme: dark)"
+      content="#0b1117"
+    />
+    <link rel="icon" href="/favicon.ico" />
+  </head>
+  <body>
+    <slot />
+
+    {/*
+      Plausible analytics, proxied through Netlify (see netlify.toml). The
+      script and event endpoint are served from this domain so ad blockers
+      don't drop them, while data still lands at plausible.io.
+      The inline queueing shim sets up plausible() before the real script
+      arrives, so call order is safe regardless of load timing.
+    */}
+    <script is:inline>
+      window.plausible = window.plausible || function () { (plausible.q = plausible.q || []).push(arguments) };
+      plausible.init = plausible.init || function (i) { plausible.o = i || {} };
+      plausible.init({ endpoint: '/api/event' });
+    </script>
+    <script is:inline defer src="/js/pa-Ql_GCQ3RubH8FjaceAlmn.js"></script>
+  </body>
+</html>
