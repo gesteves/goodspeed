@@ -52,7 +52,7 @@ export function Header({
           aria-hidden="true"
         />
         <span className={styles.statusText}>
-          Updated{" "}
+          Model updated{" "}
           <span title={formatDateTime(feed.model.fetched_at)}>
             {formatRelative(feed.model.fetched_at)}
           </span>

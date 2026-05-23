@@ -91,7 +91,7 @@ export function ArrowTimeline({
             style={{ background: swatchColor }}
             aria-hidden="true"
           />
-          <span className={styles.chartLabel}>{label}</span>
+          <h3 className={styles.chartLabel}>{label}</h3>
         </span>
         {readout}
       </figcaption>
@@ -102,6 +102,7 @@ export function ArrowTimeline({
         role="img"
         aria-label={`${label} over the forecast window`}
       >
+        <title>{`${label} over the forecast window`}</title>
         {nowX >= m.left && nowX <= width - m.right && (
           <Line
             className={styles.nowLine}

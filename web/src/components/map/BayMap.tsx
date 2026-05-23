@@ -153,8 +153,35 @@ export function BayMap({ field, nowFieldIndex, pointTimes }: BayMapProps) {
       Math.min(Math.max(0, fieldIndex), field.frames.length - 1)
     ];
 
+  const summary = useMemo(() => {
+    if (!frame) return null;
+    const temps =
+      units === "imperial" ? frame.water_temp_f : frame.water_temp_c;
+    const speeds =
+      units === "imperial" ? frame.current_speed_kt : frame.current_speed_ms;
+    const tempUnit = units === "imperial" ? "°F" : "°C";
+    const speedUnit = units === "imperial" ? "kt" : "m/s";
+    let minT = Infinity;
+    let maxT = -Infinity;
+    let minS = Infinity;
+    let maxS = -Infinity;
+    for (let i = 0; i < temps.length; i++) {
+      if (temps[i] < minT) minT = temps[i];
+      if (temps[i] > maxT) maxT = temps[i];
+      if (speeds[i] < minS) minS = speeds[i];
+      if (speeds[i] > maxS) maxS = speeds[i];
+    }
+    return (
+      `Modeled bay map across ${temps.length} water points in the ` +
+      `Alcatraz-to-Marina corridor. Water temperature ranges from ` +
+      `${minT.toFixed(1)} to ${maxT.toFixed(1)} ${tempUnit}; current speed ` +
+      `${minS.toFixed(1)} to ${maxS.toFixed(1)} ${speedUnit}.`
+    );
+  }, [frame, units]);
+
   return (
     <div className={styles.wrap}>
+      {summary && <p className="visually-hidden">{summary}</p>}
       <div className={styles.map} ref={setContainer} />
       {positions.length > 0 && frame && (
         <svg className={styles.overlay} aria-hidden="true">

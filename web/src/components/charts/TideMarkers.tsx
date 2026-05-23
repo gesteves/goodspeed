@@ -1,3 +1,4 @@
+import { formatDayClock } from "@/lib/format";
 import type { TideEvent } from "@/lib/derive/tides";
 import type { TimeseriesPoint } from "@/lib/schema";
 import styles from "./charts.module.css";
@@ -24,8 +25,10 @@ export function TideMarkers({
         const dir = high ? -1 : 1;
         const tip = y + dir * 4;
         const base = y + dir * 12;
+        const label = `${high ? "High" : "Low"} tide at ${formatDayClock(e.t)}`;
         return (
-          <g key={e.index}>
+          <g key={e.index} role="img" aria-label={label}>
+            <title>{label}</title>
             <polygon
               className={styles.tideMarker}
               data-type={e.type}
@@ -36,6 +39,7 @@ export function TideMarkers({
               x={x}
               y={y + dir * 22}
               textAnchor="middle"
+              aria-hidden="true"
             >
               {high ? "H" : "L"}
             </text>

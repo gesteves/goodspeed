@@ -43,7 +43,7 @@ export function CurrentNowCard({
           style={{ background: "var(--chart-current)" }}
           aria-hidden="true"
         />
-        <span className={styles.cardLabel}>Current</span>
+        <h3 className={styles.cardLabel}>Current</h3>
       </div>
       <div className={styles.value}>
         <span className={`${styles.number} tnum`}>

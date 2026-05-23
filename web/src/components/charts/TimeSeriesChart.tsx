@@ -112,7 +112,7 @@ export function TimeSeriesChart({
             style={{ background: color }}
             aria-hidden="true"
           />
-          <span className={styles.chartLabel}>{label}</span>
+          <h3 className={styles.chartLabel}>{label}</h3>
         </span>
         {readout}
       </figcaption>
@@ -123,6 +123,7 @@ export function TimeSeriesChart({
         role="img"
         aria-label={`${label} over the forecast window`}
       >
+        <title>{`${label} over the forecast window`}</title>
         <GridRows
           scale={yScale}
           left={m.left}

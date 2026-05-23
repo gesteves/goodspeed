@@ -40,8 +40,11 @@ export default async function Page() {
 
   return (
     <div className={styles.page}>
+      <a href="#main" className={styles.skipLink}>
+        Skip to main content
+      </a>
       <AutoRefresh />
-      <main className={styles.main}>
+      <main id="main" className={styles.main}>
         <Header feed={feed} staleness={staleness} />
         <NowPanel
           now={now.toISOString()}
@@ -63,7 +66,7 @@ export default async function Page() {
         </ScrubProvider>
         <footer className={styles.footer}>
           Modeled data from the NOAA San Francisco Bay Operational Forecast
-          System, station {feed.station.id}. These are model estimates, not measurements, and not swim advice.
+          System, station {feed.station.id}. These are model estimates, not measurements, and not swim advice. Use at your own risk.
         </footer>
       </main>
     </div>
