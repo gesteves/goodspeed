@@ -57,6 +57,7 @@ def test_healthz_503_when_no_feed_yet(client: TestClient):
     r = client.get("/healthz")
     assert r.status_code == 503
     assert r.json() == {"status": "warming"}
+    assert r.headers["cache-control"] == "no-store"
 
 
 def test_healthz_200_when_feed_published(client: TestClient, tmp_path: Path):
@@ -64,3 +65,4 @@ def test_healthz_200_when_feed_published(client: TestClient, tmp_path: Path):
     r = client.get("/healthz")
     assert r.status_code == 200
     assert r.json() == {"status": "ok", "cycle": "2026-05-22T21:00:00Z"}
+    assert r.headers["cache-control"] == "no-store"

@@ -64,11 +64,14 @@ async def healthz(_: Request) -> Response:
 
     Used by Fly's HTTP health check. The field feed is best-effort in the
     pipeline (see ``main._publish_field_feed``) so it's not a hard requirement.
+    ``no-store`` so no intermediary can serve a stale 200 once the API has
+    actually started failing.
     """
     cycle = storage.read_published_cycle(out_dir())
+    headers = {"Cache-Control": "no-store"}
     if cycle is None:
-        return JSONResponse({"status": "warming"}, status_code=503)
-    return JSONResponse({"status": "ok", "cycle": cycle})
+        return JSONResponse({"status": "warming"}, status_code=503, headers=headers)
+    return JSONResponse({"status": "ok", "cycle": cycle}, headers=headers)
 
 
 async def _http_exception(_: Request, exc: HTTPException) -> Response:
