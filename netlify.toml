@@ -1,0 +1,14 @@
+# Netlify build config for the Goodspeed web dashboard.
+#
+# The dashboard lives in the web/ subdirectory of this monorepo. Netlify's own
+# Git-triggered builds are disabled -- deploys are run from CI (see
+# .github/workflows/ci.yml) only after tests pass, via `netlify deploy`.
+#
+# Node version comes from web/.nvmrc (lts/*).
+
+[build]
+  base = "web"
+  command = "npm run build"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"

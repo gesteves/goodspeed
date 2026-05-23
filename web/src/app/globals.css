@@ -1,0 +1,156 @@
+/* ============================================================
+   Goodspeed design tokens + base styles. Mobile-first.
+   Light palette on :root; dark applied for system preference
+   (unless overridden to light) and for an explicit dark choice.
+   ============================================================ */
+
+:root {
+  /* Surfaces & text */
+  --bg: #e9eef2;
+  --surface: #ffffff;
+  --surface-2: #f3f6f8;
+  --border: #d6dee4;
+  --text: #0f1b24;
+  --text-muted: #5c6b76;
+
+  /* Accent */
+  --accent: #0a6ebd;
+  --accent-contrast: #ffffff;
+  --accent-soft: #e1eef8;
+
+  /* Status */
+  --flood: #1f9d8b;
+  --ebb: #d98324;
+  --slack: #8a97a1;
+  --live: #1f9e44;
+  --warn: #c2410c;
+  --warn-soft: #fbe6da;
+
+  /* Charts */
+  --chart-grid: #e4e9ed;
+  --chart-axis: #9aa8b2;
+  --chart-temp: #e8762b;
+  --chart-current: #0a6ebd;
+  --chart-tide: #1f9d8b;
+  --chart-wind: #7a5cc4;
+  --chart-nowcast-band: rgba(15, 27, 36, 0.05);
+  --chart-now-line: #0f1b24;
+
+  /* Shape */
+  --radius: 14px;
+  --radius-sm: 9px;
+  --shadow: 0 1px 2px rgba(15, 27, 36, 0.06),
+    0 6px 20px rgba(15, 27, 36, 0.07);
+
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0b1117;
+    --surface: #141d26;
+    --surface-2: #1c2832;
+    --border: #2a3742;
+    --text: #e7eef3;
+    --text-muted: #93a3ae;
+
+    --accent: #4aa3e0;
+    --accent-contrast: #06121c;
+    --accent-soft: #16303f;
+
+    --flood: #3fc9b3;
+    --ebb: #e6a23c;
+    --slack: #6b7884;
+    --live: #3fb950;
+    --warn: #f0883e;
+    --warn-soft: #3a2415;
+
+    --chart-grid: #243039;
+    --chart-axis: #5b6b76;
+    --chart-temp: #f0915a;
+    --chart-current: #4aa3e0;
+    --chart-tide: #3fc9b3;
+    --chart-wind: #a78bdf;
+    --chart-nowcast-band: rgba(231, 238, 243, 0.06);
+    --chart-now-line: #e7eef3;
+
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.3),
+      0 6px 20px rgba(0, 0, 0, 0.35);
+
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg: #0b1117;
+  --surface: #141d26;
+  --surface-2: #1c2832;
+  --border: #2a3742;
+  --text: #e7eef3;
+  --text-muted: #93a3ae;
+
+  --accent: #4aa3e0;
+  --accent-contrast: #06121c;
+  --accent-soft: #16303f;
+
+  --flood: #3fc9b3;
+  --ebb: #e6a23c;
+  --slack: #6b7884;
+  --live: #3fb950;
+  --warn: #f0883e;
+  --warn-soft: #3a2415;
+
+  --chart-grid: #243039;
+  --chart-axis: #5b6b76;
+  --chart-temp: #f0915a;
+  --chart-current: #4aa3e0;
+  --chart-tide: #3fc9b3;
+  --chart-wind: #a78bdf;
+  --chart-nowcast-band: rgba(231, 238, 243, 0.06);
+  --chart-now-line: #e7eef3;
+
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 6px 20px rgba(0, 0, 0, 0.35);
+
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+a {
+  color: var(--accent);
+}
+
+button {
+  font: inherit;
+  cursor: pointer;
+}
+
+/* Numeric readouts: tabular figures so values don't jitter. */
+.tnum {
+  font-variant-numeric: tabular-nums;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 3px;
+}

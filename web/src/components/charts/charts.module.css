@@ -1,0 +1,147 @@
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sectionTitle {
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+/* ---- Chart stack ---- */
+.stack {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 14px 10px 10px;
+}
+
+.plot {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.placeholder {
+  min-height: 860px;
+}
+
+.chart {
+  margin: 0;
+}
+
+.chart svg {
+  display: block;
+}
+
+.chartHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px 14px;
+  padding: 0 8px 2px;
+}
+
+.chartLabelGroup {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+}
+
+.swatch {
+  width: 9px;
+  height: 9px;
+  border-radius: 3px;
+  flex: none;
+}
+
+.chartLabel {
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+/* ---- Corner value readout ---- */
+.readout {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1px;
+}
+
+.readoutMain {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+}
+
+.readoutTime {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.readoutValue {
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+.readoutUnit {
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.readoutArrow {
+  align-self: center;
+  margin-left: 1px;
+}
+
+.readoutArrow line {
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+/* ---- In-chart marks ---- */
+.nowLine {
+  stroke: var(--chart-now-line);
+  stroke-width: 1.5;
+  opacity: 0.55;
+}
+
+.crosshair {
+  stroke: var(--text-muted);
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+  pointer-events: none;
+}
+
+/* ---- Tide markers ---- */
+.tideMarker {
+  fill: var(--chart-tide);
+  stroke: var(--surface);
+  stroke-width: 1;
+}
+
+.tideLetter {
+  fill: var(--chart-tide);
+  font-size: 9px;
+  font-weight: 700;
+}
+
+/* ---- Direction arrows ---- */
+.arrowShaft {
+  stroke-width: 2.5;
+  stroke-linecap: round;
+}
+
+.arrowSlack {
+  fill: none;
+  stroke: var(--slack);
+  stroke-width: 2;
+}

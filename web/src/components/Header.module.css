@@ -1,0 +1,96 @@
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.titleRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.titleBlock {
+  min-width: 0;
+}
+
+.title {
+  font-size: 1.7rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.subtitle {
+  margin-top: 2px;
+  color: var(--text-muted);
+  font-size: 0.95rem;
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.status {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px;
+  align-self: flex-start;
+  padding: 6px 13px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--text);
+  font-size: 0.84rem;
+}
+
+.dot {
+  width: 9px;
+  height: 9px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--live);
+  animation: statusBlink 1.6s ease-in-out infinite;
+}
+
+.dot[data-status="stale"] {
+  background: var(--warn);
+}
+
+@keyframes statusBlink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.25;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dot {
+    animation: none;
+  }
+}
+
+.statusText strong {
+  font-weight: 700;
+}
+
+.statusSep {
+  margin: 0 1px;
+  color: var(--text-muted);
+}
+
+.statusNext {
+  color: var(--text-muted);
+}
+
+@media (min-width: 600px) {
+  .title {
+    font-size: 2rem;
+  }
+}
