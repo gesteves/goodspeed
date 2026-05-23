@@ -1,6 +1,6 @@
 import { STATION_URL } from "@/lib/constants";
 import { nextCycleAt, type Staleness } from "@/lib/derive/staleness";
-import { formatClock, formatRelative } from "@/lib/format";
+import { formatDateTime, formatRelative } from "@/lib/format";
 import type { Feed } from "@/lib/schema";
 import styles from "./Header.module.css";
 import { ThemeToggle } from "./ThemeToggle";
@@ -13,6 +13,7 @@ export function Header({
   feed: Feed;
   staleness: Staleness;
 }) {
+  const next = nextCycleAt();
   return (
     <header className={styles.header}>
       <div className={styles.titleRow}>
@@ -51,14 +52,17 @@ export function Header({
           aria-hidden="true"
         />
         <span className={styles.statusText}>
-          Updated <strong>{formatRelative(feed.model.fetched_at)}</strong> ·{" "}
-          {formatClock(feed.model.fetched_at)} PT
+          Updated{" "}
+          <span title={formatDateTime(feed.model.fetched_at)}>
+            {formatRelative(feed.model.fetched_at)}
+          </span>
         </span>
         <span className={styles.statusSep} aria-hidden="true">
           ·
         </span>
         <span className={styles.statusNext}>
-          Next update {formatRelative(nextCycleAt())}
+          Next update{" "}
+          <span title={formatDateTime(next)}>{formatRelative(next)}</span>
         </span>
       </div>
     </header>
