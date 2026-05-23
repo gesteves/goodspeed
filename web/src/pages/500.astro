@@ -1,0 +1,19 @@
+---
+import Layout from "@/layouts/Layout.astro";
+import errorStyles from "@/styles/dashboard-error.module.css";
+
+const { theme } = Astro.locals;
+---
+
+<Layout initialTheme={theme} title="Conditions unavailable">
+  <div class={errorStyles.wrap}>
+    <div class={errorStyles.card}>
+      <h1 class={errorStyles.title}>Conditions unavailable</h1>
+      <p class={errorStyles.body}>
+        The feed couldn&rsquo;t be loaded right now. This usually clears up on
+        its own — the data refreshes a few times a day.
+      </p>
+      <a class={errorStyles.button} href="/">Try again</a>
+    </div>
+  </div>
+</Layout>

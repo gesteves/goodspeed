@@ -1,14 +1,15 @@
-"use client";
-
-import dynamic from "next/dynamic";
+import { lazy, Suspense } from "react";
+import { PUBLIC_MAPBOX_TOKEN } from "astro:env/client";
 import type { FieldStatus } from "@/lib/data-source";
 import type { FieldFeed } from "@/lib/schema";
 import styles from "./bayMap.module.css";
 import { computeGridExtent } from "./extent";
 
-const BayMap = dynamic(
-  () => import("./BayMap").then((m) => m.BayMap),
-  { ssr: false, loading: () => <div className={styles.skeleton} /> },
+// Lazy import: keeps Mapbox GL (~hundreds of KB) out of the initial bundle,
+// and -- importantly -- never imports the module on the server (Mapbox GL
+// touches `window` at import time).
+const BayMap = lazy(() =>
+  import("./BayMap").then((m) => ({ default: m.BayMap })),
 );
 
 interface BayMapSectionProps {
@@ -43,11 +44,9 @@ export function BayMapSection({
     );
   }
   if (!field) return null;
-  if (!process.env.NEXT_PUBLIC_MAPBOX_TOKEN) {
+  if (!PUBLIC_MAPBOX_TOKEN) {
     if (typeof window !== "undefined") {
-      console.warn(
-        "NEXT_PUBLIC_MAPBOX_TOKEN is not set; the bay map is hidden.",
-      );
+      console.warn("PUBLIC_MAPBOX_TOKEN is not set; the bay map is hidden.");
     }
     return null;
   }
@@ -58,11 +57,13 @@ export function BayMapSection({
       style={{ aspectRatio }}
       aria-label="Bay current and temperature map"
     >
-      <BayMap
-        field={field}
-        nowFieldIndex={nowFieldIndex}
-        pointTimes={pointTimes}
-      />
+      <Suspense fallback={<div className={styles.skeleton} />}>
+        <BayMap
+          field={field}
+          nowFieldIndex={nowFieldIndex}
+          pointTimes={pointTimes}
+        />
+      </Suspense>
     </section>
   );
 }

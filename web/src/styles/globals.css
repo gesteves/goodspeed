@@ -5,6 +5,12 @@
    ============================================================ */
 
 :root {
+  /* Fonts -- supplied by @fontsource-variable/geist{,-mono}. */
+  --font-geist-sans: "Geist Variable", system-ui, -apple-system, "Segoe UI",
+    Roboto, sans-serif;
+  --font-geist-mono: "Geist Mono Variable", ui-monospace, SFMono-Regular,
+    Menlo, monospace;
+
   /* Surfaces & text */
   --bg: #e9eef2;
   --surface: #ffffff;
@@ -128,7 +134,7 @@ body {
 body {
   background: var(--bg);
   color: var(--text);
-  font-family: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
+  font-family: var(--font-geist-sans);
   font-size: 16px;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;

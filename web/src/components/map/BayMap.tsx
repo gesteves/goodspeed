@@ -1,8 +1,7 @@
-"use client";
-
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { useEffect, useMemo, useState } from "react";
+import { PUBLIC_MAPBOX_TOKEN } from "astro:env/client";
 import { tempColor } from "@/lib/colors";
 import type { FieldFeed } from "@/lib/schema";
 import { useScrub } from "../charts/ScrubContext";
@@ -82,10 +81,9 @@ export function BayMap({ field, nowFieldIndex, pointTimes }: BayMapProps) {
   // Initialize the Mapbox map once a container is mounted. Theme changes are
   // handled below; we only construct one Map instance per mount.
   useEffect(() => {
-    const token = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
-    if (!container || !token) return;
+    if (!container || !PUBLIC_MAPBOX_TOKEN) return;
 
-    mapboxgl.accessToken = token;
+    mapboxgl.accessToken = PUBLIC_MAPBOX_TOKEN;
     const instance = new mapboxgl.Map({
       container,
       style: pickStyle(theme),

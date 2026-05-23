@@ -1,0 +1,18 @@
+---
+import Layout from "@/layouts/Layout.astro";
+import errorStyles from "@/styles/dashboard-error.module.css";
+
+const { theme } = Astro.locals;
+---
+
+<Layout initialTheme={theme} title="Page not found">
+  <div class={errorStyles.wrap}>
+    <div class={errorStyles.card}>
+      <h1 class={errorStyles.title}>Page not found</h1>
+      <p class={errorStyles.body}>
+        That page doesn&rsquo;t exist. The dashboard lives at the root.
+      </p>
+      <a class={errorStyles.button} href="/">Go to the dashboard</a>
+    </div>
+  </div>
+</Layout>

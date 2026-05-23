@@ -37,4 +37,5 @@
   color: var(--accent-contrast);
   font-size: 0.88rem;
   font-weight: 600;
+  text-decoration: none;
 }

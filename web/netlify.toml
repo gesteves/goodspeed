@@ -1,0 +1,11 @@
+# Local Netlify config used only by `astro dev` (via @netlify/vite-plugin).
+#
+# The deploy config lives at `../netlify.toml` at the repo root, where Netlify
+# CI looks for it. This file exists so that `@netlify/dev`, started by the
+# Astro Netlify adapter during `astro dev`, picks up a netlify.toml in the
+# current project root and doesn't walk up to the repo-root file (which
+# declares `base = "web"`, a path that, when re-resolved relative to this
+# directory, would refer to a non-existent `web/web/`).
+#
+# Empty on purpose: dev needs no Netlify config. The deploy config is at
+# `../netlify.toml`.

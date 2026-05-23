@@ -13,12 +13,12 @@
 # testing
 /coverage
 
-# next.js
-/.next/
-/out/
+# astro
+/.astro/
+/dist/
 
-# production
-/build
+# netlify (adapter output + local CLI state)
+/.netlify/
 
 # misc
 .DS_Store
@@ -34,9 +34,5 @@ yarn-error.log*
 .env*
 !.env.example
 
-# vercel
-.vercel
-
 # typescript
 *.tsbuildinfo
-next-env.d.ts
