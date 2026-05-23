@@ -69,7 +69,9 @@ export function NowPanel({ now, point, trend, nextTide }: NowPanelProps) {
           accent="var(--chart-wind)"
           value={formatNumber(wind, 1)}
           unit={unitField(METRICS.windSpeed, units).unit}
-          sub={`From the ${compass16(point.wind_bearing_deg)}`}
+          sub={`${Math.round(point.wind_bearing_deg)}° from the ${compass16(
+            point.wind_bearing_deg,
+          )}`}
         />
       </div>
     </section>

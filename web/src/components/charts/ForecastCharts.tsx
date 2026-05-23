@@ -40,13 +40,11 @@ const DECIMALS: Record<MetricKey, number> = {
 // Arrow accessors. Current arrows point the way the water flows (toward) and
 // are coloured flood/ebb; wind arrows point the way the wind blows (downwind).
 const currentBearing = (p: TimeseriesPoint) => p.current_bearing_deg;
-const currentMagnitude = (p: TimeseriesPoint) => p.current_speed_kt;
 const currentColor = (p: TimeseriesPoint) =>
   classifyCurrent(p) === "flood" ? "var(--flood)" : "var(--ebb)";
 const currentSlack = (p: TimeseriesPoint) => classifyCurrent(p) === "slack";
 
 const windDownwind = (p: TimeseriesPoint) => (p.wind_bearing_deg + 180) % 360;
-const windMagnitude = (p: TimeseriesPoint) => p.wind_speed_kt;
 const windColor = () => "var(--chart-wind)";
 
 /**
@@ -101,7 +99,7 @@ function DirectionReadout({
       <span className={styles.readoutMain}>
         <span className={`${styles.readoutValue} tnum`}>{degrees}°</span>
         <span className={styles.readoutUnit}>
-          {relation} {compass}
+          {relation} the {compass}
         </span>
         <svg
           className={styles.readoutArrow}
@@ -197,7 +195,6 @@ function ChartStack({
         label="Current direction"
         swatchColor="var(--chart-current)"
         bearing={currentBearing}
-        magnitude={currentMagnitude}
         color={currentColor}
         isSlack={currentSlack}
         readout={
@@ -257,7 +254,6 @@ function ChartStack({
         label="Wind direction"
         swatchColor="var(--chart-wind)"
         bearing={windDownwind}
-        magnitude={windMagnitude}
         color={windColor}
         readout={
           <DirectionReadout

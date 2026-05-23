@@ -1,3 +1,4 @@
+import { STATION_URL } from "@/lib/constants";
 import { nextCycleAt, type Staleness } from "@/lib/derive/staleness";
 import { formatClock, formatRelative } from "@/lib/format";
 import type { Feed } from "@/lib/schema";
@@ -16,6 +17,18 @@ export function Header({
     <header className={styles.header}>
       <div className={styles.titleRow}>
         <div className={styles.titleBlock}>
+          <p className={styles.subtitle}>
+            <span>Modeled conditions</span>
+            <span aria-hidden="true"> · </span>
+            <a
+              className={styles.subtitleLink}
+              href={STATION_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {feed.station.name}
+            </a>
+          </p>
           <h1 className={styles.title}>Alcatraz Swim Conditions</h1>
         </div>
         <div className={styles.controls}>

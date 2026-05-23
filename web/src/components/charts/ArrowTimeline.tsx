@@ -4,6 +4,8 @@ import { AxisBottom } from "@visx/axis";
 import { localPoint } from "@visx/event";
 import { Bar, Line } from "@visx/shape";
 import { useMemo, type PointerEvent, type ReactNode } from "react";
+
+const ARROW_LENGTH = 16;
 import { formatAxisTick } from "@/lib/format";
 import type { TimeseriesPoint } from "@/lib/schema";
 import styles from "./charts.module.css";
@@ -25,8 +27,6 @@ export interface ArrowTimelineProps {
   readout: ReactNode;
   /** Compass bearing each arrow points toward (degrees). */
   bearing: (p: TimeseriesPoint) => number;
-  /** Magnitude used to scale arrow length. */
-  magnitude: (p: TimeseriesPoint) => number;
   /** CSS color for each arrow. */
   color: (p: TimeseriesPoint) => string;
   /** When true for a point, draw a hollow dot instead of an arrow. */
@@ -35,8 +35,8 @@ export interface ArrowTimelineProps {
 
 /**
  * A strip of arrows -- one roughly every ~26px -- each pointing a compass
- * direction and sized by magnitude. Used for current set and wind direction.
- * Shares the x scale and scrub state with the stacked charts.
+ * direction. Used for current set and wind direction. Shares the x scale and
+ * scrub state with the stacked charts.
  */
 export function ArrowTimeline({
   data,
@@ -48,7 +48,6 @@ export function ArrowTimeline({
   swatchColor,
   readout,
   bearing,
-  magnitude,
   color,
   isSlack,
 }: ArrowTimelineProps) {
@@ -57,11 +56,6 @@ export function ArrowTimeline({
   const innerWidth = Math.max(1, width - m.left - m.right);
   const bandHeight = HEIGHT - m.top - m.bottom;
   const cy = m.top + bandHeight / 2;
-
-  const maxMag = useMemo(
-    () => Math.max(0.1, ...data.map(magnitude)),
-    [data, magnitude],
-  );
 
   // One arrow every ~26px, at least hourly (6-min cadence -> step 10).
   const indices = useMemo(() => {
@@ -130,7 +124,7 @@ export function ArrowTimeline({
               />
             );
           }
-          const len = 7 + 13 * (magnitude(p) / maxMag);
+          const len = ARROW_LENGTH;
           const c = color(p);
           return (
             <g key={i} transform={`rotate(${bearing(p)} ${cx} ${cy})`}>

@@ -2,6 +2,10 @@
 
 export const STATION_ID = "SFB1204";
 
+/** NOAA station page for SFB1204 (SW of Alcatraz Island). */
+export const STATION_URL =
+  "https://tidesandcurrents.noaa.gov/ofs/ofs_station.html?stname=SW%20of%20AI&ofs=sfb&stnid=SFB1204&subdomain=en";
+
 /** Timezone for displaying the (UTC) feed timestamps. */
 export const DISPLAY_TZ = "America/Los_Angeles";
 

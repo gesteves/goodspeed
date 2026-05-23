@@ -23,9 +23,23 @@
 }
 
 .subtitle {
-  margin-top: 2px;
+  margin-bottom: 4px;
   color: var(--text-muted);
-  font-size: 0.95rem;
+  font-size: 0.72rem;
+  font-weight: 400;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.subtitleLink {
+  color: inherit;
+  text-decoration: none;
+}
+
+.subtitleLink:hover {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
 }
 
 .controls {
