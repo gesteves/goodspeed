@@ -97,15 +97,6 @@
   color: var(--text-muted);
 }
 
-.readoutArrow {
-  align-self: center;
-  margin-left: 1px;
-}
-
-.readoutArrow line {
-  stroke-width: 2;
-  stroke-linecap: round;
-}
 
 /* ---- In-chart marks ---- */
 .nowLine {

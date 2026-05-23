@@ -83,15 +83,11 @@ function DirectionReadout({
   degrees,
   relation,
   compass,
-  arrowBearing,
-  color,
   time,
 }: {
   degrees: number;
   relation: string;
   compass: string;
-  arrowBearing: number;
-  color: string;
   time: string;
 }) {
   return (
@@ -99,20 +95,8 @@ function DirectionReadout({
       <span className={styles.readoutMain}>
         <span className={`${styles.readoutValue} tnum`}>{degrees}°</span>
         <span className={styles.readoutUnit}>
-          {relation} the {compass}
+          {relation} {compass}
         </span>
-        <svg
-          className={styles.readoutArrow}
-          viewBox="0 0 16 16"
-          width="15"
-          height="15"
-          aria-hidden="true"
-        >
-          <g transform={`rotate(${arrowBearing} 8 8)`}>
-            <line x1="8" y1="13.5" x2="8" y2="4" stroke={color} />
-            <polygon points="8,2 4.4,7.2 11.6,7.2" fill={color} />
-          </g>
-        </svg>
       </span>
       <span className={styles.readoutTime}>{time}</span>
     </span>
@@ -202,8 +186,6 @@ function ChartStack({
             degrees={Math.round(dp.current_bearing_deg)}
             relation="toward"
             compass={compass16(dp.current_bearing_deg)}
-            arrowBearing={dp.current_bearing_deg}
-            color="var(--chart-current)"
             time={timeLabel}
           />
         }
@@ -260,8 +242,6 @@ function ChartStack({
             degrees={Math.round(dp.wind_bearing_deg)}
             relation="from"
             compass={compass16(dp.wind_bearing_deg)}
-            arrowBearing={windDownwind(dp)}
-            color="var(--chart-wind)"
             time={timeLabel}
           />
         }
