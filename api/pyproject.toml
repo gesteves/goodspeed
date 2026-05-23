@@ -8,7 +8,7 @@ dependencies = [
     # xarray uses CalVer (YYYY.MM). Allow any 2024.10–2025.x; bump deliberately
     # when 2026.x lands so a calendar-year transition doesn't slip in via a
     # `uv lock --upgrade`.
-    "xarray>=2024.10,<2026",
+    "xarray>=2024.10,<2027",
     "netCDF4>=1.7.1,<1.8",
     "numpy>=2.1,<2.5",
     "jsonschema>=4.23,<5",
