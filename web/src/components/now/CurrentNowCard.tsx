@@ -11,8 +11,8 @@ import {
 import styles from "./now.module.css";
 
 const PHASE_LABEL: Record<string, string> = {
-  flood: "Flood",
-  ebb: "Ebb",
+  flood: "Flooding",
+  ebb: "Ebbing",
   slack: "Slack",
 };
 
@@ -31,7 +31,7 @@ export function CurrentNowCard({
   const sub =
     phase === "slack"
       ? "Slack · Minimal current"
-      : `${PHASE_LABEL[phase]} · Towards the ${compass16(
+      : `${PHASE_LABEL[phase]} towards the ${compass16(
           point.current_bearing_deg,
         )}`;
 
