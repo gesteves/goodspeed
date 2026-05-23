@@ -14,6 +14,7 @@
     "check:schema": "vitest run src/lib/schema.test.ts"
   },
   "dependencies": {
+    "@types/mapbox-gl": "^3.4.1",
     "@visx/axis": "^3.12.0",
     "@visx/curve": "^3.12.0",
     "@visx/event": "^3.12.0",
@@ -27,6 +28,7 @@
     "@visx/tooltip": "^3.12.0",
     "date-fns": "^4.2.1",
     "date-fns-tz": "^3.2.0",
+    "mapbox-gl": "^3.24.0",
     "next": "16.2.6",
     "react": "19.2.4",
     "react-dom": "19.2.4",

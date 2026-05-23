@@ -15,6 +15,7 @@ FILESERVER_PATH = "fileServer"
 MODEL_PATH = "NOAA/SFBOFS/MODELS"
 
 Kind = Literal["nowcast", "forecast"]
+Product = Literal["stations", "fields"]
 
 
 @dataclass(frozen=True, slots=True)
@@ -30,8 +31,11 @@ class Cycle:
     def iso(self) -> str:
         return f"{self.date.isoformat()}T{self.hour:02d}:00:00Z"
 
-    def filename(self, kind: Kind) -> str:
-        return f"sfbofs.t{self.hour:02d}z.{self.date.strftime('%Y%m%d')}.stations.{kind}.nc"
+    def filename(self, kind: Kind, product: Product = "stations") -> str:
+        return (
+            f"sfbofs.t{self.hour:02d}z.{self.date.strftime('%Y%m%d')}"
+            f".{product}.{kind}.nc"
+        )
 
 
 def latest_ready_cycle(now_utc: datetime, ready_buffer_min: int = READY_BUFFER_MIN) -> Cycle:
@@ -67,11 +71,33 @@ def _model_dir(cycle: Cycle, thredds_path: str) -> str:
     return f"{THREDDS_BASE}/{thredds_path}/{MODEL_PATH}/{yyyy}/{mm}/{dd}"
 
 
-def dods_url(cycle: Cycle, kind: Kind) -> str:
+def dods_url(cycle: Cycle, kind: Kind, product: Product = "stations") -> str:
     """OPeNDAP URL for slicing the file server-side."""
-    return f"{_model_dir(cycle, DODS_PATH)}/{cycle.filename(kind)}"
+    return f"{_model_dir(cycle, DODS_PATH)}/{cycle.filename(kind, product)}"
 
 
-def fileserver_url(cycle: Cycle, kind: Kind) -> str:
+def fileserver_url(cycle: Cycle, kind: Kind, product: Product = "stations") -> str:
     """HTTPS URL for downloading the full file."""
-    return f"{_model_dir(cycle, FILESERVER_PATH)}/{cycle.filename(kind)}"
+    return f"{_model_dir(cycle, FILESERVER_PATH)}/{cycle.filename(kind, product)}"
+
+
+# ---- regulargrid (pre-gridded per-hour) files -------------------------------
+
+Phase = Literal["n", "f"]  # n = nowcast hour, f = forecast hour
+
+
+def regulargrid_filename(cycle: Cycle, phase: Phase, hour: int) -> str:
+    """Per-hour regulargrid filename, e.g. ``sfbofs.t15z.20260523.regulargrid.f001.nc``.
+
+    SFBOFS publishes 7 nowcast hours (n000..n006) and 49 forecast hours
+    (f000..f048) per cycle, each as a single-timestep NetCDF on a regular
+    lat/lon grid.
+    """
+    return (
+        f"sfbofs.t{cycle.hour:02d}z.{cycle.date.strftime('%Y%m%d')}"
+        f".regulargrid.{phase}{hour:03d}.nc"
+    )
+
+
+def regulargrid_dods_url(cycle: Cycle, phase: Phase, hour: int) -> str:
+    return f"{_model_dir(cycle, DODS_PATH)}/{regulargrid_filename(cycle, phase, hour)}"

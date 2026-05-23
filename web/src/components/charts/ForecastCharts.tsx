@@ -18,7 +18,7 @@ import { useUnits } from "../providers/UnitsProvider";
 import { ArrowTimeline } from "./ArrowTimeline";
 import styles from "./charts.module.css";
 import { CHART_MARGIN, makeTimeScale } from "./scales";
-import { ScrubProvider, useScrub } from "./ScrubContext";
+import { useScrub } from "./ScrubContext";
 import { TideMarkers } from "./TideMarkers";
 import { TimeSeriesChart } from "./TimeSeriesChart";
 
@@ -274,19 +274,17 @@ export function ForecastCharts(props: ForecastChartsProps) {
   return (
     <section className={styles.section} aria-label="48-hour forecast">
       <h2 className={styles.sectionTitle}>Forecast</h2>
-      <ScrubProvider>
-        <div className={styles.stack}>
-          <ParentSize debounceTime={0} parentSizeStyles={{ width: "100%" }}>
-            {({ width }) =>
-              width > 1 ? (
-                <ChartStack width={width} {...props} />
-              ) : (
-                <div className={styles.placeholder} />
-              )
-            }
-          </ParentSize>
-        </div>
-      </ScrubProvider>
+      <div className={styles.stack}>
+        <ParentSize debounceTime={0} parentSizeStyles={{ width: "100%" }}>
+          {({ width }) =>
+            width > 1 ? (
+              <ChartStack width={width} {...props} />
+            ) : (
+              <div className={styles.placeholder} />
+            )
+          }
+        </ParentSize>
+      </div>
     </section>
   );
 }

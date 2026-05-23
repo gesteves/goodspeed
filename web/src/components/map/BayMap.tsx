@@ -1,0 +1,223 @@
+"use client";
+
+import mapboxgl from "mapbox-gl";
+import "mapbox-gl/dist/mapbox-gl.css";
+import { useEffect, useMemo, useState } from "react";
+import { tempColor } from "@/lib/colors";
+import type { FieldFeed } from "@/lib/schema";
+import { useScrub } from "../charts/ScrubContext";
+import { useTheme } from "../providers/ThemeProvider";
+import { useUnits } from "../providers/UnitsProvider";
+import styles from "./bayMap.module.css";
+import { computeGridExtent } from "./extent";
+import { MapLegend, arrowPx } from "./MapLegend";
+import { useMapPositions } from "./projection";
+
+export interface BayMapProps {
+  field: FieldFeed;
+  /** Field-frame index closest to the current real-time "now". */
+  nowFieldIndex: number;
+  /** Point feed timestamps, parallel-indexed with the chart `hoveredIndex`. */
+  pointTimes: string[];
+}
+
+const LIGHT_STYLE = "mapbox://styles/mapbox/light-v11";
+const DARK_STYLE = "mapbox://styles/mapbox/dark-v11";
+
+/** Use the chart scrub to pick a frame in the field feed (snap by timestamp). */
+function useFieldFrameIndex(
+  hovered: number | null,
+  pointTimes: readonly string[],
+  fieldTimes: readonly string[],
+  fallback: number,
+): number {
+  const mapping = useMemo(() => {
+    const fts = fieldTimes.map((t) => new Date(t).getTime());
+    return pointTimes.map((p) => {
+      const target = new Date(p).getTime();
+      let best = 0;
+      let bestDiff = Infinity;
+      for (let j = 0; j < fts.length; j++) {
+        const d = Math.abs(fts[j] - target);
+        if (d < bestDiff) {
+          bestDiff = d;
+          best = j;
+        }
+      }
+      return best;
+    });
+  }, [pointTimes, fieldTimes]);
+  if (hovered == null) return fallback;
+  return mapping[hovered] ?? fallback;
+}
+
+function pickStyle(theme: "system" | "light" | "dark"): string {
+  if (theme === "dark") return DARK_STYLE;
+  if (theme === "light") return LIGHT_STYLE;
+  return typeof window !== "undefined" &&
+    window.matchMedia("(prefers-color-scheme: dark)").matches
+    ? DARK_STYLE
+    : LIGHT_STYLE;
+}
+
+export function BayMap({ field, nowFieldIndex, pointTimes }: BayMapProps) {
+  const [container, setContainer] = useState<HTMLDivElement | null>(null);
+  const [map, setMap] = useState<mapboxgl.Map | null>(null);
+  const { theme } = useTheme();
+  const { units } = useUnits();
+  const { hoveredIndex } = useScrub();
+
+  const fieldIndex = useFieldFrameIndex(
+    hoveredIndex,
+    pointTimes,
+    field.t,
+    nowFieldIndex,
+  );
+
+  const gridExtent = useMemo(
+    () => computeGridExtent(field.grid.lat, field.grid.lon),
+    [field.grid.lat, field.grid.lon],
+  );
+
+  // Initialize the Mapbox map once a container is mounted. Theme changes are
+  // handled below; we only construct one Map instance per mount.
+  useEffect(() => {
+    const token = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
+    if (!container || !token) return;
+
+    mapboxgl.accessToken = token;
+    const instance = new mapboxgl.Map({
+      container,
+      style: pickStyle(theme),
+      // Mapbox 3.x defaults to "globe" which fails silently on some
+      // GPUs/drivers; force flat mercator since we're zoomed into a bay.
+      projection: { name: "mercator" },
+      // Fit to the *grid's* extent (not the whole bbox) so the map zooms in
+      // close enough that the arrows fill the canvas without blank margins.
+      bounds: [
+        [gridExtent.lonMin, gridExtent.latMin],
+        [gridExtent.lonMax, gridExtent.latMax],
+      ],
+      fitBoundsOptions: { padding: 10, animate: false },
+      maxPitch: 0,
+      maxZoom: 16,
+      attributionControl: true,
+    });
+    // Fully static map -- the dashboard controls the view, so disable every
+    // user interaction.
+    instance.dragPan.disable();
+    instance.dragRotate.disable();
+    instance.scrollZoom.disable();
+    instance.boxZoom.disable();
+    instance.doubleClickZoom.disable();
+    instance.touchZoomRotate.disable();
+    instance.keyboard.disable();
+
+    // Mapbox measures the container once at construction; if the layout
+    // hasn't settled yet the canvas ends up sized 0x0 and tiles never paint.
+    // A ResizeObserver keeps it in sync with the actual container size.
+    const observer = new ResizeObserver(() => instance.resize());
+    observer.observe(container);
+
+    // Defer publishing the instance to React state until Mapbox finishes its
+    // initial load, so the overlay only paints once `map.project()` is
+    // ready. Subscribing to an external event satisfies the
+    // `react-hooks/set-state-in-effect` rule.
+    const onLoad = () => {
+      instance.resize();
+      setMap(instance);
+    };
+    instance.on("load", onLoad);
+
+    return () => {
+      observer.disconnect();
+      instance.off("load", onLoad);
+      instance.remove();
+      setMap(null);
+    };
+    // Theme/bbox/field changes are handled by other effects.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [container]);
+
+  // Theme changes -> swap style. setStyle just kicks off a style fetch;
+  // `map.project()` still works during the swap, so no need to gate positions.
+  useEffect(() => {
+    if (!map) return;
+    map.setStyle(pickStyle(theme));
+  }, [theme, map]);
+
+  const positions = useMapPositions(map, field.grid.lat, field.grid.lon);
+
+  const frame =
+    field.frames[
+      Math.min(Math.max(0, fieldIndex), field.frames.length - 1)
+    ];
+
+  return (
+    <div className={styles.wrap}>
+      <div className={styles.map} ref={setContainer} />
+      {positions.length > 0 && frame && (
+        <svg className={styles.overlay} aria-hidden="true">
+          {positions.map((p, i) => (
+            <Arrow
+              key={i}
+              x={p.x}
+              y={p.y}
+              bearing={frame.current_bearing_deg[i]}
+              speedKt={frame.current_speed_kt[i]}
+              tempC={frame.water_temp_c[i]}
+            />
+          ))}
+        </svg>
+      )}
+      <MapLegend units={units} />
+    </div>
+  );
+}
+
+function Arrow({
+  x,
+  y,
+  bearing,
+  speedKt,
+  tempC,
+}: {
+  x: number;
+  y: number;
+  bearing: number;
+  speedKt: number;
+  tempC: number;
+}) {
+  const color = tempColor(tempC);
+  if (speedKt < 0.08) {
+    return (
+      <circle
+        cx={x}
+        cy={y}
+        r={3}
+        fill="none"
+        stroke={color}
+        strokeWidth={2}
+      />
+    );
+  }
+  const len = arrowPx(speedKt);
+  const tip = -len / 2;
+  return (
+    <g transform={`rotate(${bearing} ${x} ${y})`}>
+      <line
+        x1={x}
+        y1={y + len / 2}
+        x2={x}
+        y2={y + tip + 4}
+        stroke={color}
+        strokeWidth={3}
+        strokeLinecap="round"
+      />
+      <polygon
+        points={`${x},${y + tip - 3} ${x - 4.5},${y + tip + 5} ${x + 4.5},${y + tip + 5}`}
+        fill={color}
+      />
+    </g>
+  );
+}

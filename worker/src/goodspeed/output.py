@@ -14,29 +14,48 @@ from jsonschema import Draft202012Validator
 
 from .catalog import Cycle
 from .extract import STATION_ID, StationSeries
+from .extract_field import FieldGrid
 
 log = logging.getLogger(__name__)
 
 
-def _resolve_schema_path() -> Path:
-    """Find the JSON Schema, honoring ``GOODSPEED_SCHEMA_PATH`` when set.
+POINT_SCHEMA_FILENAME = "sfbofs-sfb1204.schema.json"
+FIELD_SCHEMA_FILENAME = "sfbofs-field.schema.json"
 
-    Searches: env var → ../../schema (from src/goodspeed) → /app/schema (Docker).
+
+def _resolve_schema_path(filename: str = POINT_SCHEMA_FILENAME) -> Path:
+    """Find the JSON Schema for ``filename``, honoring ``GOODSPEED_SCHEMA_PATH``.
+
+    ``GOODSPEED_SCHEMA_PATH`` may be:
+      * a directory containing schema files (preferred for multiple schemas), or
+      * a file path (legacy; we look in its parent for siblings).
+
+    Falls back to ``../../schema`` (repo checkout) and ``/app/schema`` (Docker).
     """
     env = os.environ.get("GOODSPEED_SCHEMA_PATH")
     if env:
-        return Path(env)
+        env_path = Path(env)
+        if env_path.is_dir():
+            return env_path / filename
+        if env_path.name == filename:
+            return env_path
+        sibling = env_path.parent / filename
+        if sibling.exists():
+            return sibling
+        # Legacy: the env var pointed at a single specific schema file; if
+        # that's the one we're looking for it's already handled above; if
+        # not, fall through to the standard candidates.
     here = Path(__file__).resolve()
     candidates = [
-        here.parents[3] / "schema" / "sfbofs-sfb1204.schema.json",  # repo checkout
-        Path("/app/schema/sfbofs-sfb1204.schema.json"),             # Docker image
+        here.parents[3] / "schema" / filename,  # repo checkout
+        Path("/app/schema") / filename,         # Docker image
     ]
     for c in candidates:
         if c.exists():
             return c
     raise FileNotFoundError(
-        "Could not locate sfbofs-sfb1204.schema.json. Set GOODSPEED_SCHEMA_PATH or "
-        f"place the file at one of: {[str(c) for c in candidates]}"
+        f"Could not locate {filename}. Set GOODSPEED_SCHEMA_PATH or place the "
+        f"file at one of: {[str(c) for c in candidates]}"
     )
 
 
@@ -197,7 +216,7 @@ def sanity_check(feed: dict[str, Any]) -> list[str]:
 
 def validate_against_schema(feed: dict[str, Any]) -> None:
     """Raise ``jsonschema.ValidationError`` if ``feed`` does not match the schema."""
-    path = _resolve_schema_path()
+    path = _resolve_schema_path(POINT_SCHEMA_FILENAME)
     with path.open("r", encoding="utf-8") as fh:
         schema = json.load(fh)
     Draft202012Validator(schema).validate(feed)
@@ -205,3 +224,116 @@ def validate_against_schema(feed: dict[str, Any]) -> None:
 
 def serialize(feed: dict[str, Any]) -> bytes:
     return json.dumps(feed, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+
+
+# ---- field feed (interpolated grid for the map) -----------------------------
+
+
+def build_field_feed(
+    cycle: Cycle,
+    fetched_at_utc: datetime,
+    bbox: tuple[float, float, float, float],
+    nowcast_grid: FieldGrid,
+    forecast_grid: FieldGrid,
+    source_files: list[str],
+) -> dict[str, Any]:
+    """Assemble the field (map) feed dict.
+
+    Both grids must share the same in-water points. Since SFBOFS shares its
+    FVCOM mesh across nowcast and forecast files and we use the same
+    ``FIELD_BBOX`` for both, this holds by construction; we sanity-check it.
+
+    Dedupes the nowcast/forecast boundary, preferring the forecast timestamp
+    (matches the point feed's convention).
+    """
+    if nowcast_grid.lat.shape != forecast_grid.lat.shape or not (
+        np.allclose(nowcast_grid.lat, forecast_grid.lat)
+        and np.allclose(nowcast_grid.lon, forecast_grid.lon)
+    ):
+        raise ValueError(
+            "Nowcast and forecast field grids do not share the same in-water "
+            "points; this should not happen since SFBOFS shares its mesh."
+        )
+
+    lat_min, lat_max, lon_min, lon_max = bbox
+
+    def _frame(temp_c: np.ndarray, u: np.ndarray, v: np.ndarray) -> dict[str, Any]:
+        speed_ms = current_speed_ms(u, v)
+        bearing = current_bearing_deg(u, v)
+        return {
+            "current_speed_ms": [_round(float(x), 3) for x in speed_ms],
+            "current_speed_kt": [_round(float(ms_to_kt(x)), 3) for x in speed_ms],
+            "current_bearing_deg": [_round(float(x), 1) for x in bearing],
+            "water_temp_c": [_round(float(x), 3) for x in temp_c],
+            "water_temp_f": [_round(float(c_to_f(x)), 2) for x in temp_c],
+        }
+
+    def _iter(grid: FieldGrid, source: str) -> list[tuple[str, str, dict[str, Any]]]:
+        entries: list[tuple[str, str, dict[str, Any]]] = []
+        for i, t in enumerate(grid.times):
+            ts = t.astimezone(UTC) if t.tzinfo else t.replace(tzinfo=UTC)
+            t_iso = ts.strftime("%Y-%m-%dT%H:%M:%SZ")
+            entries.append(
+                (t_iso, source, _frame(grid.temp_c[i], grid.u_ms[i], grid.v_ms[i]))
+            )
+        return entries
+
+    raw = _iter(nowcast_grid, "nowcast") + _iter(forecast_grid, "forecast")
+    # Sort so dict-key dedupe keeps the forecast version on a tie.
+    raw.sort(key=lambda e: (e[0], 0 if e[1] == "nowcast" else 1))
+    by_t: dict[str, tuple[str, str, dict[str, Any]]] = {}
+    for entry in raw:
+        by_t[entry[0]] = entry
+    sorted_entries = sorted(by_t.values(), key=lambda e: e[0])
+
+    return {
+        "model": {
+            "name": "SFBOFS",
+            "cycle": cycle.iso(),
+            "fetched_at": fetched_at_utc.astimezone(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "source_files": source_files,
+            "model_version": MODEL_VERSION,
+        },
+        "bbox": {
+            "lat_min": _round(lat_min, 4),
+            "lat_max": _round(lat_max, 4),
+            "lon_min": _round(lon_min, 4),
+            "lon_max": _round(lon_max, 4),
+        },
+        "grid": {
+            "lat": [_round(float(x), 5) for x in nowcast_grid.lat],
+            "lon": [_round(float(x), 5) for x in nowcast_grid.lon],
+        },
+        "t": [e[0] for e in sorted_entries],
+        "source": [e[1] for e in sorted_entries],
+        "frames": [e[2] for e in sorted_entries],
+    }
+
+
+def validate_field_against_schema(feed: dict[str, Any]) -> None:
+    path = _resolve_schema_path(FIELD_SCHEMA_FILENAME)
+    with path.open("r", encoding="utf-8") as fh:
+        schema = json.load(fh)
+    Draft202012Validator(schema).validate(feed)
+
+
+def sanity_check_field(feed: dict[str, Any]) -> list[str]:
+    """Same bounds as ``sanity_check`` but across every grid point in every frame."""
+    warnings: list[str] = []
+    for field in ("water_temp_c", "current_speed_ms"):
+        if field not in SANITY_BOUNDS:
+            continue
+        lo, hi = SANITY_BOUNDS[field]
+        count = 0
+        first: tuple[str, float] | None = None
+        for t, frame in zip(feed["t"], feed["frames"], strict=True):
+            for v in frame[field]:
+                if not (lo <= v <= hi):
+                    count += 1
+                    if first is None:
+                        first = (t, v)
+        if count:
+            warnings.append(
+                f"{field}: {count} value(s) outside [{lo}, {hi}]; first: {first}"
+            )
+    return warnings

@@ -12,7 +12,7 @@ from typing import Literal
 import requests
 import xarray as xr
 
-from .catalog import Cycle, Kind, dods_url, fileserver_url
+from .catalog import Cycle, Kind, Product, dods_url, fileserver_url
 
 log = logging.getLogger(__name__)
 
@@ -37,21 +37,36 @@ class FileNotAvailable(Exception):
     """Raised when both OPeNDAP and HTTPS report the file is missing (404 / catalog miss)."""
 
 
-def open_dataset(cycle: Cycle, kind: Kind, tmp_root: Path | None = None) -> tuple[xr.Dataset, FetchMeta]:
-    """Open the SFBOFS station file for ``cycle`` and ``kind``.
+def open_dataset(
+    cycle: Cycle,
+    kind: Kind,
+    tmp_root: Path | None = None,
+    product: Product = "stations",
+) -> tuple[xr.Dataset, FetchMeta]:
+    """Open the SFBOFS ``product`` file for ``cycle`` and ``kind``.
+
+    ``product`` is "stations" (default; 250 named locations, small file) or
+    "fields" (full FVCOM mesh, much larger -- always slice server-side via
+    OPeNDAP before ``.load()``).
 
     Tries OPeNDAP first (with retries), then falls back to a full HTTPS download.
     Caller is responsible for ``isel`` + ``load()`` to push slicing server-side
     when ``meta.mode == "opendap"``.
     """
-    opendap = dods_url(cycle, kind)
+    opendap = dods_url(cycle, kind, product)
     last_exc: Exception | None = None
     t0 = time.monotonic()
     for attempt, wait in enumerate(OPENDAP_RETRIES, start=1):
         try:
             log.info(
                 "opendap.attempt",
-                extra={"url": opendap, "attempt": attempt, "cycle": cycle.iso(), "kind": kind},
+                extra={
+                    "url": opendap,
+                    "attempt": attempt,
+                    "cycle": cycle.iso(),
+                    "kind": kind,
+                    "product": product,
+                },
             )
             ds = xr.open_dataset(opendap, engine="netcdf4", decode_times=True)
             log.info(
@@ -79,8 +94,11 @@ def open_dataset(cycle: Cycle, kind: Kind, tmp_root: Path | None = None) -> tupl
                 time.sleep(wait)
 
     # Fallback to HTTPS download.
-    download = fileserver_url(cycle, kind)
-    log.info("download.start", extra={"url": download, "cycle": cycle.iso(), "kind": kind})
+    download = fileserver_url(cycle, kind, product)
+    log.info(
+        "download.start",
+        extra={"url": download, "cycle": cycle.iso(), "kind": kind, "product": product},
+    )
 
     # Pre-flight HEAD so a 404 is distinguishable from transient issues — main.py uses
     # FileNotAvailable to decide whether to fall back to the previous cycle.
@@ -97,7 +115,7 @@ def open_dataset(cycle: Cycle, kind: Kind, tmp_root: Path | None = None) -> tupl
 
     tmp_dir = tmp_root if tmp_root is not None else Path(tempfile.gettempdir())
     tmp_dir.mkdir(parents=True, exist_ok=True)
-    local = tmp_dir / cycle.filename(kind)
+    local = tmp_dir / cycle.filename(kind, product)
 
     with requests.get(download, stream=True, timeout=DOWNLOAD_TIMEOUT_S) as resp:
         resp.raise_for_status()

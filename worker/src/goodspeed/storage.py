@@ -1,4 +1,11 @@
-"""Publish the JSON feed: S3 by default, local files when no bucket is configured."""
+"""Publish JSON feeds: S3 by default, local files when no bucket is configured.
+
+Both the per-station point feed (``latest.json`` + ``runs/sfbofs-sfb1204-*.json``)
+and the gridded field feed for the map (``field-latest.json`` +
+``runs/sfbofs-field-*.json``) share the same routing and cache headers; the
+:func:`_push_keyed` helper does the heavy lifting and the public ``push_feed``
+/ ``push_field_feed`` wrappers just plug in the right key names.
+"""
 
 from __future__ import annotations
 
@@ -13,49 +20,79 @@ CONTENT_TYPE = "application/json"
 LATEST_CACHE = "public, max-age=300"
 RUNS_CACHE = "public, max-age=31536000, immutable"
 
+LATEST_KEY = "latest.json"
+FIELD_LATEST_KEY = "field-latest.json"
+
 
 def run_key(cycle_iso: str) -> str:
     return f"runs/sfbofs-sfb1204-{cycle_iso}.json"
 
 
-LATEST_KEY = "latest.json"
+def field_run_key(cycle_iso: str) -> str:
+    return f"runs/sfbofs-field-{cycle_iso}.json"
+
+
+# ---- public API -------------------------------------------------------------
 
 
 def push_feed(body: bytes, cycle_iso: str, out_dir: Path | None = None) -> dict[str, str]:
-    """Publish ``body`` to S3 or to a local directory.
+    """Publish the per-station point feed."""
+    return _push_keyed(body, LATEST_KEY, run_key(cycle_iso), out_dir)
+
+
+def push_field_feed(
+    body: bytes, cycle_iso: str, out_dir: Path | None = None
+) -> dict[str, str]:
+    """Publish the gridded field (map) feed."""
+    return _push_keyed(body, FIELD_LATEST_KEY, field_run_key(cycle_iso), out_dir)
+
+
+# ---- internals --------------------------------------------------------------
+
+
+def _push_keyed(
+    body: bytes,
+    latest_key: str,
+    run_path: str,
+    out_dir: Path | None = None,
+) -> dict[str, str]:
+    """Publish ``body`` under the given keys to S3 or to a local directory.
 
     Rules:
       * If ``out_dir`` is given, write to that directory and skip S3.
       * Else if ``S3_BUCKET`` is set in the env, push to S3.
       * Else write to ``./output/`` and warn.
-
-    Returns a dict ``{"latest": <location>, "run": <location>}`` for logging.
     """
-    run_path = run_key(cycle_iso)
-
     if out_dir is not None:
-        return _write_local(body, out_dir, run_path)
+        return _write_local(body, out_dir, latest_key, run_path)
 
     bucket = os.environ.get("S3_BUCKET")
     if not bucket:
         fallback = Path("output")
         log.warning(
             "storage.local_fallback",
-            extra={"reason": "S3_BUCKET unset and --out-dir not given", "path": str(fallback)},
+            extra={
+                "reason": "S3_BUCKET unset and --out-dir not given",
+                "path": str(fallback),
+                "latest_key": latest_key,
+            },
         )
-        return _write_local(body, fallback, run_path)
+        return _write_local(body, fallback, latest_key, run_path)
 
-    return _push_s3(body, bucket, run_path)
+    return _push_s3(body, bucket, latest_key, run_path)
 
 
-def _write_local(body: bytes, out_dir: Path, run_path: str) -> dict[str, str]:
+def _write_local(
+    body: bytes, out_dir: Path, latest_key: str, run_path: str
+) -> dict[str, str]:
     out_dir = out_dir.expanduser().resolve()
     out_dir.mkdir(parents=True, exist_ok=True)
     run_file = out_dir / run_path
     run_file.parent.mkdir(parents=True, exist_ok=True)
     run_file.write_bytes(body)
 
-    latest_file = out_dir / LATEST_KEY
+    latest_file = out_dir / latest_key
+    latest_file.parent.mkdir(parents=True, exist_ok=True)
     latest_file.write_bytes(body)
 
     log.info(
@@ -69,7 +106,9 @@ def _write_local(body: bytes, out_dir: Path, run_path: str) -> dict[str, str]:
     return {"latest": str(latest_file), "run": str(run_file)}
 
 
-def _push_s3(body: bytes, bucket: str, run_path: str) -> dict[str, str]:
+def _push_s3(
+    body: bytes, bucket: str, latest_key: str, run_path: str
+) -> dict[str, str]:
     # boto3 is only imported when actually needed so the local-file path doesn't
     # require AWS deps to be importable.
     import boto3
@@ -84,7 +123,7 @@ def _push_s3(body: bytes, bucket: str, run_path: str) -> dict[str, str]:
     )
     s3.put_object(
         Bucket=bucket,
-        Key=LATEST_KEY,
+        Key=latest_key,
         Body=body,
         ContentType=CONTENT_TYPE,
         CacheControl=LATEST_CACHE,
@@ -93,15 +132,18 @@ def _push_s3(body: bytes, bucket: str, run_path: str) -> dict[str, str]:
         "storage.s3_pushed",
         extra={
             "bucket": bucket,
-            "latest": f"s3://{bucket}/{LATEST_KEY}",
+            "latest": f"s3://{bucket}/{latest_key}",
             "run": f"s3://{bucket}/{run_path}",
             "bytes": len(body),
         },
     )
     return {
-        "latest": f"s3://{bucket}/{LATEST_KEY}",
+        "latest": f"s3://{bucket}/{latest_key}",
         "run": f"s3://{bucket}/{run_path}",
     }
+
+
+# ---- skip-check (point feed only) -------------------------------------------
 
 
 def read_published_cycle(out_dir: Path | None = None) -> str | None:

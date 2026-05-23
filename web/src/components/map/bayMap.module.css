@@ -1,0 +1,94 @@
+/* The section's aspect-ratio is set inline from the field grid's extent so
+   the map fills the container with no blank margins on the sides. */
+.section {
+  position: relative;
+  width: 100%;
+}
+
+.wrap {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+.skeleton {
+  width: 100%;
+  height: 100%;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+}
+
+/* Mapbox adds `.mapboxgl-map { position: relative }` to this container; if
+   we relied on `position: absolute; inset: 0` for sizing, that override would
+   collapse it to 0 height. Use explicit width/height so the container stays
+   sized regardless of Mapbox's class. */
+.map {
+  width: 100%;
+  height: 100%;
+}
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+/* ---- Legend overlay ---- */
+.legend {
+  position: absolute;
+  /* Bottom offset clears Mapbox's attribution control in the same corner. */
+  bottom: 32px;
+  right: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px 10px;
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow);
+  font-size: 0.72rem;
+  color: var(--text);
+  max-width: calc(100% - 24px);
+}
+
+.legendBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.legendCaption {
+  color: var(--text-muted);
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.legendRamp {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.legendBar {
+  flex: 1 1 auto;
+  height: 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  min-width: 90px;
+}
+
+.legendLabel {
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.72rem;
+}

@@ -8,7 +8,16 @@ import sys
 from datetime import UTC, datetime
 from pathlib import Path
 
-from . import catalog, extract, fetcher, logging_config, notify, output, storage
+from . import (
+    catalog,
+    extract,
+    extract_field,
+    fetcher,
+    logging_config,
+    notify,
+    output,
+    storage,
+)
 
 log = logging.getLogger(__name__)
 
@@ -104,7 +113,76 @@ def run_once(
             **locations,
         },
     )
+
+    # Field (map) feed -- best-effort: a failure here must never block the
+    # point feed publish. The fields file is the full FVCOM mesh and is
+    # heavier; we crop to the swim corridor + decimate to 30-min before
+    # publishing.
+    try:
+        _publish_field_feed(cycle, fetched_at, out_dir)
+    except Exception as exc:  # noqa: BLE001 - intentional best-effort
+        log.warning(
+            "field.failed",
+            extra={
+                "error": f"{type(exc).__name__}: {exc}",
+                "cycle": cycle.iso(),
+            },
+        )
+
     return 0
+
+
+def _publish_field_feed(
+    cycle: catalog.Cycle,
+    fetched_at: datetime,
+    out_dir: Path | None,
+) -> None:
+    """Build and publish the gridded field feed for the bay map.
+
+    Iterates the NOAA SFBOFS per-hour regulargrid files (7 nowcast + 49
+    forecast) for ``cycle``, crops each to the corridor bbox, and assembles
+    a 56-frame field feed at 1-hour cadence.
+    """
+    nc_grid = extract_field.load_field_grid(
+        cycle, "n", extract_field.NOWCAST_HOURS
+    )
+    fc_grid = extract_field.load_field_grid(
+        cycle, "f", extract_field.FORECAST_HOURS
+    )
+
+    log.info(
+        "field.extract",
+        extra={
+            "cycle": cycle.iso(),
+            "grid_points": int(nc_grid.lat.size),
+            "nowcast_frames": int(nc_grid.times.size),
+            "forecast_frames": int(fc_grid.times.size),
+        },
+    )
+
+    field_feed = output.build_field_feed(
+        cycle,
+        fetched_at,
+        extract_field.FIELD_BBOX,
+        nc_grid,
+        fc_grid,
+        extract_field.source_filenames(cycle),
+    )
+    for warning in output.sanity_check_field(field_feed):
+        log.warning("field.sanity.bounds", extra={"warning": warning})
+    output.validate_field_against_schema(field_feed)
+    body = output.serialize(field_feed)
+    locations = storage.push_field_feed(body, cycle.iso(), out_dir=out_dir)
+    log.info(
+        "field.complete",
+        extra={
+            "cycle": cycle.iso(),
+            "grid_points": len(field_feed["grid"]["lat"]),
+            "frames": len(field_feed["frames"]),
+            "bytes": len(body),
+            **{f"field_{k}": v for k, v in locations.items()},
+        },
+    )
 
 
 def serve(out_dir: Path | None = None) -> int:

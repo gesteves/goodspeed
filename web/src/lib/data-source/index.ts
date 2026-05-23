@@ -1,3 +1,4 @@
+import { fetchFieldFeed } from "./field";
 import { fetchFeed } from "./sfbofs";
 import type { DashboardData } from "./types";
 import { getWeather } from "./weather";
@@ -9,6 +10,10 @@ export type { DashboardData } from "./types";
  * pages depend on this, not on individual feeds.
  */
 export async function getDashboardData(): Promise<DashboardData> {
-  const [feed, weather] = await Promise.all([fetchFeed(), getWeather()]);
-  return { feed, weather };
+  const [feed, field, weather] = await Promise.all([
+    fetchFeed(),
+    fetchFieldFeed(),
+    getWeather(),
+  ]);
+  return { feed, field, weather };
 }

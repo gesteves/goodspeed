@@ -54,3 +54,43 @@ export type TimeseriesPoint = z.infer<typeof TimeseriesPointSchema>;
 export type Station = z.infer<typeof StationSchema>;
 export type Model = z.infer<typeof ModelSchema>;
 export type Feed = z.infer<typeof FeedSchema>;
+
+/**
+ * Field (gridded) feed schema -- parallel to the point feed, but for the
+ * bay map. Mirrors `../schema/sfbofs-field.schema.json`; `schema-field.test.ts`
+ * fails when the two drift apart.
+ */
+
+export const FieldBboxSchema = z.object({
+  lat_min: z.number().min(-90).max(90),
+  lat_max: z.number().min(-90).max(90),
+  lon_min: z.number().min(-180).max(180),
+  lon_max: z.number().min(-180).max(180),
+});
+
+export const FieldGridSchema = z.object({
+  lat: z.array(z.number().min(-90).max(90)).min(1),
+  lon: z.array(z.number().min(-180).max(180)).min(1),
+});
+
+export const FieldFrameSchema = z.object({
+  current_speed_ms: z.array(z.number().nonnegative()),
+  current_speed_kt: z.array(z.number().nonnegative()),
+  current_bearing_deg: z.array(z.number().min(0).max(360)),
+  water_temp_c: z.array(z.number()),
+  water_temp_f: z.array(z.number()),
+});
+
+export const FieldFeedSchema = z.object({
+  model: ModelSchema,
+  bbox: FieldBboxSchema,
+  grid: FieldGridSchema,
+  t: z.array(z.iso.datetime()).min(1),
+  source: z.array(z.enum(["nowcast", "forecast"])).min(1),
+  frames: z.array(FieldFrameSchema).min(1),
+});
+
+export type FieldBbox = z.infer<typeof FieldBboxSchema>;
+export type FieldGrid = z.infer<typeof FieldGridSchema>;
+export type FieldFrame = z.infer<typeof FieldFrameSchema>;
+export type FieldFeed = z.infer<typeof FieldFeedSchema>;

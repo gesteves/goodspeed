@@ -1,0 +1,108 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://goodspeed.gesteves.com/schema/sfbofs-field.schema.json",
+  "title": "Goodspeed field feed (SFBOFS Alcatraz corridor)",
+  "description": "Modeled surface-layer currents and water temperature across a regular lat/lon grid in the Alcatraz-to-Marina swim corridor, interpolated from the NOAA SFBOFS FVCOM mesh. Parallel arrays share the t[]/source[] time grid and the grid.lat[]/grid.lon[] spatial grid. One run = 6 h nowcast + 48 h forecast, decimated to 30-min cadence (T ~= 108).",
+  "type": "object",
+  "required": ["model", "bbox", "grid", "t", "source", "frames"],
+  "additionalProperties": false,
+  "properties": {
+    "model": {
+      "type": "object",
+      "required": ["name", "cycle", "fetched_at", "source_files", "model_version"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string", "const": "SFBOFS" },
+        "cycle": { "type": "string", "format": "date-time" },
+        "fetched_at": { "type": "string", "format": "date-time" },
+        "source_files": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 1
+        },
+        "model_version": { "type": "string" },
+        "notes": { "type": "string" }
+      }
+    },
+    "bbox": {
+      "type": "object",
+      "required": ["lat_min", "lat_max", "lon_min", "lon_max"],
+      "additionalProperties": false,
+      "properties": {
+        "lat_min": { "type": "number", "minimum": -90, "maximum": 90 },
+        "lat_max": { "type": "number", "minimum": -90, "maximum": 90 },
+        "lon_min": { "type": "number", "minimum": -180, "maximum": 180 },
+        "lon_max": { "type": "number", "minimum": -180, "maximum": 180 }
+      }
+    },
+    "grid": {
+      "type": "object",
+      "required": ["lat", "lon"],
+      "additionalProperties": false,
+      "description": "Parallel arrays of length P, one entry per in-water grid point. Points are arbitrary order but stable across timesteps; frame arrays share the same indexing.",
+      "properties": {
+        "lat": {
+          "type": "array",
+          "items": { "type": "number", "minimum": -90, "maximum": 90 },
+          "minItems": 1
+        },
+        "lon": {
+          "type": "array",
+          "items": { "type": "number", "minimum": -180, "maximum": 180 },
+          "minItems": 1
+        }
+      }
+    },
+    "t": {
+      "type": "array",
+      "items": { "type": "string", "format": "date-time" },
+      "minItems": 1
+    },
+    "source": {
+      "type": "array",
+      "items": { "enum": ["nowcast", "forecast"] },
+      "minItems": 1
+    },
+    "frames": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/frame" }
+    }
+  },
+  "$defs": {
+    "frame": {
+      "type": "object",
+      "required": [
+        "current_speed_ms",
+        "current_speed_kt",
+        "current_bearing_deg",
+        "water_temp_c",
+        "water_temp_f"
+      ],
+      "additionalProperties": false,
+      "description": "All arrays have the same length P, matching grid.lat/grid.lon.",
+      "properties": {
+        "current_speed_ms": {
+          "type": "array",
+          "items": { "type": "number", "minimum": 0 }
+        },
+        "current_speed_kt": {
+          "type": "array",
+          "items": { "type": "number", "minimum": 0 }
+        },
+        "current_bearing_deg": {
+          "type": "array",
+          "items": { "type": "number", "minimum": 0, "maximum": 360 }
+        },
+        "water_temp_c": {
+          "type": "array",
+          "items": { "type": "number" }
+        },
+        "water_temp_f": {
+          "type": "array",
+          "items": { "type": "number" }
+        }
+      }
+    }
+  }
+}
