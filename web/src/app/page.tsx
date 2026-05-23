@@ -63,7 +63,7 @@ export default async function Page() {
         </ScrubProvider>
         <footer className={styles.footer}>
           Modeled data from the NOAA San Francisco Bay Operational Forecast
-          System (SFBOFS), station {feed.station.id}. These are model estimates, not measurements, and not swim advice.
+          System, station {feed.station.id}. These are model estimates, not measurements, and not swim advice.
         </footer>
       </main>
     </div>
