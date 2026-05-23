@@ -2,7 +2,7 @@
 # Build: docker build -t goodspeed-api -f api/Dockerfile .
 # Fly:   fly deploy --config api/fly.toml --dockerfile api/Dockerfile
 #        (run from the repo root)
-FROM python:3.12-slim
+FROM python:3.14-slim
 
 RUN pip install --no-cache-dir uv==0.4.27
 
