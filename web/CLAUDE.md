@@ -52,6 +52,7 @@ Use Node LTS (`nvm use` reads `.nvmrc`).
 
 ## Deploy
 
-Hosted on Netlify. Deploys are gated through `../.github/workflows/ci.yml`: the `web`
-job lints/typechecks/tests/builds, and on a passing `main` build `web-deploy` runs
-`netlify-cli deploy --build --prod`. Netlify's own Git-triggered builds are disabled.
+Hosted on Netlify with the standard Git-triggered build flow. Netlify runs
+`npm run check && npm run build` on every push; `check` is
+`lint && typecheck && test`, so any failure blocks the deploy. The repo's
+`../.github/workflows/ci.yml` only covers the worker (deploy to Fly.io).

@@ -5,14 +5,12 @@ on:
     branches: ["*"]
     paths:
       - "worker/**"
-      - "web/**"
       - "schema/**"
       - ".github/workflows/ci.yml"
   pull_request:
     branches: [main]
     paths:
       - "worker/**"
-      - "web/**"
       - "schema/**"
       - ".github/workflows/ci.yml"
 
@@ -25,32 +23,7 @@ env:
   FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
 
 jobs:
-  # Decide which halves of the monorepo changed so the worker and web
-  # pipelines only run -- and only deploy -- when their own files change.
-  changes:
-    runs-on: ubuntu-latest
-    outputs:
-      worker: ${{ steps.filter.outputs.worker }}
-      web: ${{ steps.filter.outputs.web }}
-    steps:
-      - uses: actions/checkout@v6
-      - uses: dorny/paths-filter@v3
-        id: filter
-        with:
-          filters: |
-            worker:
-              - 'worker/**'
-              - 'schema/**'
-              - '.github/workflows/ci.yml'
-            web:
-              - 'web/**'
-              - 'schema/**'
-              - '.github/workflows/ci.yml'
-
-  # ---------------------------------------------------------------- worker
   test:
-    needs: changes
-    if: needs.changes.outputs.worker == 'true'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -78,8 +51,8 @@ jobs:
   notify-test:
     name: Notify test result
     runs-on: ubuntu-latest
-    needs: [changes, test]
-    if: always() && needs.changes.outputs.worker == 'true'
+    needs: test
+    if: always()
 
     steps:
       - name: Set short SHA
@@ -130,9 +103,9 @@ jobs:
   deploy:
     name: Deploy worker
     runs-on: ubuntu-latest
-    needs: [changes, test]
+    needs: test
     concurrency: deploy-group
-    if: needs.changes.outputs.worker == 'true' && github.ref == 'refs/heads/main' && github.event_name == 'push' && !contains(github.event.head_commit.message, '[skip deploy]') && !contains(github.event.head_commit.message, '[no deploy]')
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push' && !contains(github.event.head_commit.message, '[skip deploy]') && !contains(github.event.head_commit.message, '[no deploy]')
 
     steps:
       - name: Set short SHA
@@ -188,161 +161,5 @@ jobs:
             attachments:
               - color: "danger"
                 fallback: "Worker deploy failed: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-                text: "<${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|`${{ env.SHORT_SHA }}`> - ${{ github.event.head_commit.message }}"
-                footer: "<${{ github.server_url }}/${{ github.repository }}|${{ github.repository }}> · <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View workflow>"
-
-  # ------------------------------------------------------------------- web
-  web:
-    name: Web tests
-    runs-on: ubuntu-latest
-    needs: changes
-    if: needs.changes.outputs.web == 'true'
-    defaults:
-      run:
-        working-directory: web
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
-
-      - name: Set up Node
-        uses: actions/setup-node@v4
-        with:
-          node-version-file: web/.nvmrc
-          cache: npm
-          cache-dependency-path: web/package-lock.json
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Lint
-        run: npm run lint
-
-      - name: Typecheck
-        run: npm run typecheck
-
-      - name: Run tests
-        run: npm test
-
-      - name: Build
-        run: npm run build
-
-  notify-web:
-    name: Notify web test result
-    runs-on: ubuntu-latest
-    needs: [changes, web]
-    if: always() && needs.changes.outputs.web == 'true'
-
-    steps:
-      - name: Set short SHA
-        run: echo "SHORT_SHA=${GITHUB_SHA::8}" >> $GITHUB_ENV
-
-      - name: Set branch or PR info
-        run: |
-          if [ "${{ github.event_name }}" == "pull_request" ]; then
-            echo "BRANCH_NAME=${{ github.head_ref }}" >> $GITHUB_ENV
-            echo "COMMIT_MESSAGE=$(echo "${{ github.event.pull_request.head.commit.message }}" | head -n 1)" >> $GITHUB_ENV
-            echo "BRANCH_URL=${{ github.server_url }}/${{ github.repository }}/pull/${{ github.event.pull_request.number }}" >> $GITHUB_ENV
-          else
-            echo "BRANCH_NAME=${{ github.ref_name }}" >> $GITHUB_ENV
-            echo "COMMIT_MESSAGE=$(echo "${{ github.event.head_commit.message }}" | head -n 1)" >> $GITHUB_ENV
-            echo "BRANCH_URL=${{ github.server_url }}/${{ github.repository }}/tree/${{ github.ref_name }}" >> $GITHUB_ENV
-          fi
-
-      - name: Notify Slack (success)
-        if: needs.web.result == 'success'
-        continue-on-error: true
-        uses: slackapi/slack-github-action@v3.0.3
-        with:
-          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
-          webhook-type: incoming-webhook
-          payload: |
-            text: "Web tests passed on <${{ env.BRANCH_URL }}|`${{ env.BRANCH_NAME }}`>"
-            attachments:
-              - color: "good"
-                fallback: "Web tests passed on ${{ env.BRANCH_NAME }}"
-                text: "<${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|`${{ env.SHORT_SHA }}`> - ${{ env.COMMIT_MESSAGE }}"
-                footer: "<${{ github.server_url }}/${{ github.repository }}|${{ github.repository }}> · <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View workflow>"
-
-      - name: Notify Slack (failure)
-        if: needs.web.result == 'failure'
-        continue-on-error: true
-        uses: slackapi/slack-github-action@v3.0.3
-        with:
-          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
-          webhook-type: incoming-webhook
-          payload: |
-            text: "Web tests <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|failed> on <${{ env.BRANCH_URL }}|`${{ env.BRANCH_NAME }}`>"
-            attachments:
-              - color: "danger"
-                fallback: "Web tests failed on ${{ env.BRANCH_NAME }}"
-                text: "<${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|`${{ env.SHORT_SHA }}`> - ${{ env.COMMIT_MESSAGE }}"
-                footer: "<${{ github.server_url }}/${{ github.repository }}|${{ github.repository }}> · <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View workflow>"
-
-  web-deploy:
-    name: Deploy web
-    runs-on: ubuntu-latest
-    needs: [changes, web]
-    concurrency: web-deploy-group
-    if: needs.changes.outputs.web == 'true' && github.ref == 'refs/heads/main' && github.event_name == 'push' && !contains(github.event.head_commit.message, '[skip deploy]') && !contains(github.event.head_commit.message, '[no deploy]')
-
-    steps:
-      - name: Set short SHA
-        run: echo "SHORT_SHA=${GITHUB_SHA::8}" >> $GITHUB_ENV
-
-      - name: Notify Slack (deploy starting)
-        continue-on-error: true
-        uses: slackapi/slack-github-action@v3.0.3
-        with:
-          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
-          webhook-type: incoming-webhook
-          payload: |
-            text: "Web deploy starting :hourglass_flowing_sand:"
-            attachments:
-              - color: "#439FE0"
-                fallback: "Web deploy starting"
-                text: "<${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|`${{ env.SHORT_SHA }}`> - ${{ github.event.head_commit.message }}"
-                footer: "<${{ github.server_url }}/${{ github.repository }}|${{ github.repository }}> · <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View workflow>"
-
-      - uses: actions/checkout@v6
-
-      - name: Set up Node
-        uses: actions/setup-node@v4
-        with:
-          node-version-file: web/.nvmrc
-
-      - name: Deploy to Netlify
-        run: npx --yes netlify-cli@latest deploy --build --prod
-        env:
-          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
-
-      - name: Notify Slack (deploy successful)
-        if: success()
-        continue-on-error: true
-        uses: slackapi/slack-github-action@v3.0.3
-        with:
-          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
-          webhook-type: incoming-webhook
-          payload: |
-            text: "Web deploy successful :rocket:"
-            attachments:
-              - color: "good"
-                fallback: "Web deploy successful"
-                text: "<${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|`${{ env.SHORT_SHA }}`> - ${{ github.event.head_commit.message }}"
-                footer: "<${{ github.server_url }}/${{ github.repository }}|${{ github.repository }}> · <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View workflow>"
-
-      - name: Notify Slack (deploy failed)
-        if: failure()
-        continue-on-error: true
-        uses: slackapi/slack-github-action@v3.0.3
-        with:
-          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
-          webhook-type: incoming-webhook
-          payload: |
-            text: "Web deploy <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|failed> :warning:"
-            attachments:
-              - color: "danger"
-                fallback: "Web deploy failed: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
                 text: "<${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|`${{ env.SHORT_SHA }}`> - ${{ github.event.head_commit.message }}"
                 footer: "<${{ github.server_url }}/${{ github.repository }}|${{ github.repository }}> · <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View workflow>"

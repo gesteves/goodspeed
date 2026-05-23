@@ -10,6 +10,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
+    "check": "npm run lint && npm run typecheck && npm test",
     "check:schema": "vitest run src/lib/schema.test.ts"
   },
   "dependencies": {
