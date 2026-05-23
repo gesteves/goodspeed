@@ -31,7 +31,7 @@ export function CurrentNowCard({
   const sub =
     phase === "slack"
       ? "Slack · Minimal current"
-      : `${PHASE_LABEL[phase]} towards the ${compass16(
+      : `${PHASE_LABEL[phase]} toward the ${compass16(
           point.current_bearing_deg,
         )}`;
 
