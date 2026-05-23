@@ -9,7 +9,7 @@ export function MapLegend({ units }: { units: UnitSystem }) {
   return (
     <div className={styles.legend} aria-label="Map legend">
       <div className={styles.legendBlock}>
-        <span className={styles.legendCaption}>Water</span>
+        <span className={styles.legendCaption}>Water Temperature</span>
         <div className={styles.legendRamp}>
           <span className={styles.legendLabel}>{labels.min}</span>
           <span className={styles.legendBar} style={{ background: gradient }} />

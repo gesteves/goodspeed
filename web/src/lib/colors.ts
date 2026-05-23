@@ -9,7 +9,9 @@ import type { UnitSystem } from "./units/units";
  * gradient that reads as cool-blue -> teal -> warm-orange.
  */
 
-export const TEMP_DOMAIN_C: readonly [number, number] = [10, 17];
+// 55-65 °F, expressed in °C for the worker/feed-side data.
+// 55 °F ≈ 12.778 °C, 65 °F ≈ 18.333 °C.
+export const TEMP_DOMAIN_C: readonly [number, number] = [12.778, 18.333];
 
 interface Stop {
   c: number; // °C anchor
@@ -18,12 +20,13 @@ interface Stop {
   h: number; // hue degrees
 }
 
+// Five stops spread evenly across the 55-65 °F domain.
 const STOPS: readonly Stop[] = [
-  { c: 10, L: 0.7, C: 0.14, h: 250 }, // cool blue
-  { c: 12, L: 0.78, C: 0.12, h: 210 }, // cool cyan
-  { c: 14, L: 0.86, C: 0.1, h: 150 }, // mid green
-  { c: 16, L: 0.82, C: 0.14, h: 60 }, // warm yellow
-  { c: 17, L: 0.7, C: 0.18, h: 40 }, // warm orange-red
+  { c: 12.778, L: 0.7, C: 0.14, h: 250 }, // cool blue        (~55 °F)
+  { c: 14.167, L: 0.78, C: 0.12, h: 210 }, // cool cyan       (~57.5 °F)
+  { c: 15.556, L: 0.86, C: 0.1, h: 150 }, // mid green        (~60 °F)
+  { c: 16.944, L: 0.82, C: 0.14, h: 60 }, // warm yellow      (~62.5 °F)
+  { c: 18.333, L: 0.7, C: 0.18, h: 40 }, // warm orange-red   (~65 °F)
 ];
 
 function clamp(x: number, lo: number, hi: number): number {
@@ -71,7 +74,7 @@ export function tempDomainLabels(units: UnitSystem): { min: string; max: string 
       max: `${Math.round(c1 * 1.8 + 32)}°F`,
     };
   }
-  return { min: `${c0}°C`, max: `${c1}°C` };
+  return { min: `${Math.round(c0)}°C`, max: `${Math.round(c1)}°C` };
 }
 
 /** A small set of evenly-spaced colors across the domain, for legend gradients. */

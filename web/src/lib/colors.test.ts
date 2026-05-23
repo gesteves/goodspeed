@@ -27,14 +27,14 @@ describe("tempColor", () => {
 describe("tempDomainLabels", () => {
   it("formats Fahrenheit for imperial", () => {
     const { min, max } = tempDomainLabels("imperial");
-    expect(min).toBe("50°F"); // 10°C
-    expect(max).toBe("63°F"); // 17°C ≈ 62.6, rounds to 63
+    expect(min).toBe("55°F");
+    expect(max).toBe("65°F");
   });
 
   it("formats Celsius for metric", () => {
     const { min, max } = tempDomainLabels("metric");
-    expect(min).toBe("10°C");
-    expect(max).toBe("17°C");
+    expect(min).toBe("13°C"); // 12.778 rounds to 13
+    expect(max).toBe("18°C"); // 18.333 rounds to 18
   });
 });
 
