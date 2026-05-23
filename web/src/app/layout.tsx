@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { cookies } from "next/headers";
+import Script from "next/script";
 import "./globals.css";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import { UnitsProvider } from "@/components/providers/UnitsProvider";
@@ -55,6 +56,20 @@ export default async function RootLayout({
         <ThemeProvider initialTheme={theme}>
           <UnitsProvider initialUnits={units}>{children}</UnitsProvider>
         </ThemeProvider>
+        {/* Plausible analytics, proxied through Netlify (see netlify.toml). The
+            script and event endpoint are served from this domain so ad blockers
+            don't drop them, while data still lands at plausible.io. */}
+        <Script
+          src="/js/pa-Ql_GCQ3RubH8FjaceAlmn.js"
+          strategy="afterInteractive"
+        />
+        <Script id="plausible-init" strategy="afterInteractive">
+          {`
+            window.plausible = window.plausible || function () { (plausible.q = plausible.q || []).push(arguments) };
+            plausible.init = plausible.init || function (i) { plausible.o = i || {} };
+            plausible.init({ endpoint: '/api/event' });
+          `}
+        </Script>
       </body>
     </html>
   );

@@ -13,3 +13,18 @@
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"
+
+# Plausible analytics proxy. Per https://plausible.io/docs/proxy/guides/netlify
+# -- the script and event endpoint are served from this domain so the analytics
+# requests aren't blocked by ad blockers / privacy extensions, while the data
+# still goes to plausible.io. Both rewrites use status 200 (proxy, not a 301).
+[[redirects]]
+  from = "/js/pa-Ql_GCQ3RubH8FjaceAlmn.js"
+  to = "https://plausible.io/js/pa-Ql_GCQ3RubH8FjaceAlmn.js"
+  status = 200
+
+[[redirects]]
+  from = "/api/event"
+  to = "https://plausible.io/api/event"
+  status = 200
+  force = true
