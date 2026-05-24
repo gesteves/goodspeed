@@ -1,8 +1,6 @@
 # Goodspeed web dashboard
 
-Astro 6 + React 19 dashboard for NOAA SFBOFS station SFB1204 (SW of Alcatraz
-Island). Renders water temperature, currents, tide, and wind from the feed
-published by `../api/`.
+Astro 6 + React 19 SPA that renders the feed published by `../api/`.
 
 ## Local dev
 
@@ -16,6 +14,15 @@ npm run dev
 ```
 
 Dev server runs at http://localhost:4321.
+
+### Env vars
+
+Typed in `astro.config.mjs` under `env.schema`; see `.env.example`.
+
+- `GOODSPEED_FEED_URL` — required. Point feed location (http(s) URL,
+  `file:` URL, or path).
+- `GOODSPEED_FIELD_FEED_URL` — optional. Gridded field feed for the bay map.
+- `PUBLIC_MAPBOX_TOKEN` — optional. The bay map is hidden if absent.
 
 ## Commands
 
