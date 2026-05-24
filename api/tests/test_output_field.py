@@ -9,7 +9,14 @@ import pytest
 
 from goodspeed import output
 from goodspeed.catalog import Cycle
-from goodspeed.extract_field import FIELD_BBOX, FieldGrid
+from goodspeed.extract_field import (
+    FIELD_BBOX,
+    FIELD_CENTER_LAT,
+    FIELD_CENTER_LON,
+    FieldGrid,
+)
+
+FIELD_CENTER: tuple[float, float] = (FIELD_CENTER_LAT, FIELD_CENTER_LON)
 
 
 def _grid(times, lat, lon, temp_c, u_ms, v_ms) -> FieldGrid:
@@ -45,7 +52,7 @@ def test_build_field_feed_shape_and_schema_validation():
     fc = _two_point_grid(start_fc, frames=24, source_temp_c=15.0)
 
     feed = output.build_field_feed(
-        cycle, fetched_at, FIELD_BBOX, nc, fc,
+        cycle, fetched_at, FIELD_BBOX, FIELD_CENTER, nc, fc,
         source_files=["sfbofs.t15z.20260523.fields.nowcast.nc",
                       "sfbofs.t15z.20260523.fields.forecast.nc"],
     )
@@ -59,6 +66,10 @@ def test_build_field_feed_shape_and_schema_validation():
         "lon_min": pytest.approx(FIELD_BBOX[2]),
         "lon_max": pytest.approx(FIELD_BBOX[3]),
     }
+    # Center must be the exact configured focal point (the dashboard reads
+    # this verbatim to position the camera).
+    assert feed["center"]["lat"] == FIELD_CENTER_LAT
+    assert feed["center"]["lon"] == FIELD_CENTER_LON
     assert len(feed["grid"]["lat"]) == 2
     assert len(feed["grid"]["lon"]) == 2
 
@@ -103,7 +114,7 @@ def test_build_field_feed_dedupes_boundary_preferring_forecast():
         temp_c=[[16.0, 16.0]], u_ms=[[0.0, 0.0]], v_ms=[[0.0, 0.0]],
     )
     feed = output.build_field_feed(
-        cycle, fetched_at, FIELD_BBOX, nc, fc,
+        cycle, fetched_at, FIELD_BBOX, FIELD_CENTER, nc, fc,
         source_files=["a.nc", "b.nc"],
     )
     assert len(feed["t"]) == 1
@@ -128,7 +139,8 @@ def test_build_field_feed_rejects_mismatched_grids():
     )
     with pytest.raises(ValueError):
         output.build_field_feed(
-            cycle, fetched_at, FIELD_BBOX, nc, fc, source_files=["a.nc", "b.nc"]
+            cycle, fetched_at, FIELD_BBOX, FIELD_CENTER, nc, fc,
+            source_files=["a.nc", "b.nc"],
         )
 
 
@@ -147,7 +159,8 @@ def test_sanity_check_field_flags_out_of_bounds():
         temp_c=[[30.0]], u_ms=[[0.0]], v_ms=[[0.0]],
     )
     feed = output.build_field_feed(
-        cycle, fetched_at, FIELD_BBOX, nc, fc, source_files=["a.nc", "b.nc"]
+        cycle, fetched_at, FIELD_BBOX, FIELD_CENTER, nc, fc,
+        source_files=["a.nc", "b.nc"],
     )
     warnings = output.sanity_check_field(feed)
     assert warnings, "Expected a sanity warning for out-of-bounds temperature"

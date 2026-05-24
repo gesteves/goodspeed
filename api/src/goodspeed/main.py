@@ -196,6 +196,7 @@ def _publish_field_feed(
         cycle,
         fetched_at,
         extract_field.FIELD_BBOX,
+        (extract_field.FIELD_CENTER_LAT, extract_field.FIELD_CENTER_LON),
         nc_grid,
         fc_grid,
         extract_field.source_filenames(cycle),

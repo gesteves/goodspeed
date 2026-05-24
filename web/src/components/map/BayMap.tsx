@@ -75,8 +75,8 @@ export function BayMap({ field, nowFieldIndex, pointTimes }: BayMapProps) {
   );
 
   const gridExtent = useMemo(
-    () => computeGridExtent(field.grid.lat, field.grid.lon),
-    [field.grid.lat, field.grid.lon],
+    () => computeGridExtent(field.center),
+    [field.center],
   );
 
   // Initialize the Mapbox map once a container is mounted. Theme changes are

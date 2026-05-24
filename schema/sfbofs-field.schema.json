@@ -4,7 +4,7 @@
   "title": "Goodspeed field feed (SFBOFS Alcatraz corridor)",
   "description": "Modeled surface-layer currents and water temperature across a regular lat/lon grid in the Alcatraz-to-Marina swim corridor, interpolated from the NOAA SFBOFS FVCOM mesh. Parallel arrays share the t[]/source[] time grid and the grid.lat[]/grid.lon[] spatial grid. One run = 6 h nowcast + 48 h forecast, decimated to 30-min cadence (T ~= 108).",
   "type": "object",
-  "required": ["model", "bbox", "grid", "t", "source", "frames"],
+  "required": ["model", "bbox", "center", "grid", "t", "source", "frames"],
   "additionalProperties": false,
   "properties": {
     "model": {
@@ -33,6 +33,16 @@
         "lat_max": { "type": "number", "minimum": -90, "maximum": 90 },
         "lon_min": { "type": "number", "minimum": -180, "maximum": 180 },
         "lon_max": { "type": "number", "minimum": -180, "maximum": 180 }
+      }
+    },
+    "center": {
+      "type": "object",
+      "description": "Focal point the dashboard centers the map view on. Not necessarily the bbox midpoint -- the bbox sets the extracted arrow coverage area; this sets where the camera points.",
+      "required": ["lat", "lon"],
+      "additionalProperties": false,
+      "properties": {
+        "lat": { "type": "number", "minimum": -90, "maximum": 90 },
+        "lon": { "type": "number", "minimum": -180, "maximum": 180 }
       }
     },
     "grid": {

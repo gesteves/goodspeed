@@ -50,7 +50,7 @@ export function BayMapSection({
     }
     return null;
   }
-  const { aspectRatio } = computeGridExtent(field.grid.lat, field.grid.lon);
+  const { aspectRatio } = computeGridExtent(field.center);
   return (
     <section
       className={styles.section}

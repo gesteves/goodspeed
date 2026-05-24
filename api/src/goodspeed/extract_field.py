@@ -22,6 +22,7 @@ the resulting frame count is too low.
 from __future__ import annotations
 
 import logging
+import math
 from dataclasses import dataclass
 from datetime import UTC, datetime
 
@@ -33,8 +34,35 @@ from .catalog import Cycle, Phase, regulargrid_dods_url
 log = logging.getLogger(__name__)
 
 
-# Tight corridor around Alcatraz -> Marina Green.
-FIELD_BBOX: tuple[float, float, float, float] = (37.804, 37.836, -122.455, -122.400)
+# Center of the field bbox. This is the single source of truth for where the
+# bay map points: the published feed's ``bbox`` is derived from these constants,
+# and the web dashboard reads that bbox to position the map view. Picked to
+# avoid baking in a specific Alcatraz-to-shore route (race start point is
+# conditions-chosen on race day, not fixed).
+FIELD_CENTER_LAT: float = 37.81712739692702
+FIELD_CENTER_LON: float = -122.435219371718
+
+# Half-width of the bbox, in statute miles. A 4x4 mi square gives the dashboard
+# room to recenter without arrows running off the edges.
+FIELD_HALF_MILES: float = 2.0
+
+# Earth radius (mean, statute miles). Used to convert miles -> degrees.
+_EARTH_RADIUS_MI: float = 3958.7613
+
+# Miles per degree of latitude is essentially constant; miles per degree of
+# longitude shrinks with cos(lat).
+_MI_PER_DEG_LAT: float = math.pi * _EARTH_RADIUS_MI / 180.0
+_MI_PER_DEG_LON: float = _MI_PER_DEG_LAT * math.cos(math.radians(FIELD_CENTER_LAT))
+
+_DLAT: float = FIELD_HALF_MILES / _MI_PER_DEG_LAT
+_DLON: float = FIELD_HALF_MILES / _MI_PER_DEG_LON
+
+FIELD_BBOX: tuple[float, float, float, float] = (
+    FIELD_CENTER_LAT - _DLAT,
+    FIELD_CENTER_LAT + _DLAT,
+    FIELD_CENTER_LON - _DLON,
+    FIELD_CENTER_LON + _DLON,
+)
 
 # SFBOFS publishes 7 nowcast hours (n000..n006) and 49 forecast hours
 # (f000..f048) per cycle.

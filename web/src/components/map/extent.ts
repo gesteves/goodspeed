@@ -8,50 +8,38 @@ export interface GridExtent {
 }
 
 /**
- * Fraction of the grid's latitude span trimmed from the TOP (northern) edge
- * of the displayed map view. Pushes Alcatraz closer to the top edge of the
- * frame; arrows above the new latMax fall outside the wrap's `overflow:hidden`
- * and aren't shown.
+ * Displayed map view size, in statute miles. Independent of the feed's bbox --
+ * the bbox controls how much area of arrows the API extracts (more = buffer
+ * for re-centering), while these dimensions control what the camera shows.
+ * Tune these to change the map's zoom level / aspect ratio.
  */
-export const TOP_CROP_FACTOR = 0.2;
+export const VIEW_HEIGHT_MILES = 1.77;
+export const VIEW_WIDTH_MILES = 3.0;
+
+/** Subset of {@link FieldFeed["center"]} needed to position the view. */
+export interface ViewCenter {
+  lat: number;
+  lon: number;
+}
+
+const EARTH_RADIUS_MI = 3958.7613;
+const MI_PER_DEG_LAT = (Math.PI * EARTH_RADIUS_MI) / 180;
 
 /**
  * Compute the lat/lon extent the map should display plus its Mercator aspect
- * ratio. Tight to the grid points, with ``TOP_CROP_FACTOR`` trimmed off the
- * north edge so the corridor's busiest band fills the frame.
+ * ratio. View dimensions come from ``VIEW_{HEIGHT,WIDTH}_MILES``; the view is
+ * centered on ``center`` (published by the API as the single source of truth
+ * for where the map points).
  */
-export function computeGridExtent(
-  lats: readonly number[],
-  lons: readonly number[],
-  topCropFactor: number = TOP_CROP_FACTOR,
-): GridExtent {
-  if (lats.length === 0 || lats.length !== lons.length) {
-    throw new Error(
-      "computeGridExtent: lats and lons must be non-empty and matched",
-    );
-  }
-  let latMin = Infinity;
-  let latMax = -Infinity;
-  let lonMin = Infinity;
-  let lonMax = -Infinity;
-  for (let i = 0; i < lats.length; i++) {
-    const la = lats[i];
-    const lo = lons[i];
-    if (la < latMin) latMin = la;
-    if (la > latMax) latMax = la;
-    if (lo < lonMin) lonMin = lo;
-    if (lo > lonMax) lonMax = lo;
-  }
-  const gridSpan = latMax - latMin;
-  const croppedLatMax = latMax - gridSpan * topCropFactor;
-  const midLat = (latMin + croppedLatMax) / 2;
-  const w = (lonMax - lonMin) * Math.cos((midLat * Math.PI) / 180);
-  const h = croppedLatMax - latMin;
+export function computeGridExtent(center: ViewCenter): GridExtent {
+  const miPerDegLon = MI_PER_DEG_LAT * Math.cos((center.lat * Math.PI) / 180);
+  const latSpan = VIEW_HEIGHT_MILES / MI_PER_DEG_LAT;
+  const lonSpan = VIEW_WIDTH_MILES / miPerDegLon;
   return {
-    latMin,
-    latMax: croppedLatMax,
-    lonMin,
-    lonMax,
-    aspectRatio: w / h,
+    latMin: center.lat - latSpan / 2,
+    latMax: center.lat + latSpan / 2,
+    lonMin: center.lon - lonSpan / 2,
+    lonMax: center.lon + lonSpan / 2,
+    aspectRatio: VIEW_WIDTH_MILES / VIEW_HEIGHT_MILES,
   };
 }

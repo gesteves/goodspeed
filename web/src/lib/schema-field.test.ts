@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   FieldBboxSchema,
+  FieldCenterSchema,
   FieldFeedSchema,
   FieldFrameSchema,
   FieldGridSchema,
@@ -39,6 +40,12 @@ describe("Zod field schema matches the JSON Schema contract", () => {
     );
   });
 
+  it("center has the same properties", () => {
+    expect(sorted(Object.keys(FieldCenterSchema.shape))).toEqual(
+      propNames(jsonSchema.properties?.center as JsonSchemaObject),
+    );
+  });
+
   it("grid has the same properties", () => {
     expect(sorted(Object.keys(FieldGridSchema.shape))).toEqual(
       propNames(jsonSchema.properties?.grid as JsonSchemaObject),
@@ -62,6 +69,7 @@ describe("FieldFeedSchema parsing", () => {
       model_version: "FVCOM_4.4.7",
     },
     bbox: { lat_min: 37.804, lat_max: 37.836, lon_min: -122.455, lon_max: -122.4 },
+    center: { lat: 37.817, lon: -122.435 },
     grid: { lat: [37.815, 37.825], lon: [-122.43, -122.42] },
     t: ["2026-05-23T15:00:00Z"],
     source: ["nowcast"],

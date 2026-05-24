@@ -233,6 +233,7 @@ def build_field_feed(
     cycle: Cycle,
     fetched_at_utc: datetime,
     bbox: tuple[float, float, float, float],
+    center: tuple[float, float],
     nowcast_grid: FieldGrid,
     forecast_grid: FieldGrid,
     source_files: list[str],
@@ -256,6 +257,7 @@ def build_field_feed(
         )
 
     lat_min, lat_max, lon_min, lon_max = bbox
+    center_lat, center_lon = center
 
     def _frame(temp_c: np.ndarray, u: np.ndarray, v: np.ndarray) -> dict[str, Any]:
         speed_ms = current_speed_ms(u, v)
@@ -299,6 +301,10 @@ def build_field_feed(
             "lat_max": _round(lat_max, 4),
             "lon_min": _round(lon_min, 4),
             "lon_max": _round(lon_max, 4),
+        },
+        "center": {
+            "lat": _round(center_lat, 14),
+            "lon": _round(center_lon, 14),
         },
         "grid": {
             "lat": [_round(float(x), 5) for x in nowcast_grid.lat],

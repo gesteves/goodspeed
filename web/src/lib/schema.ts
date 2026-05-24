@@ -68,6 +68,11 @@ export const FieldBboxSchema = z.object({
   lon_max: z.number().min(-180).max(180),
 });
 
+export const FieldCenterSchema = z.object({
+  lat: z.number().min(-90).max(90),
+  lon: z.number().min(-180).max(180),
+});
+
 export const FieldGridSchema = z.object({
   lat: z.array(z.number().min(-90).max(90)).min(1),
   lon: z.array(z.number().min(-180).max(180)).min(1),
@@ -84,6 +89,7 @@ export const FieldFrameSchema = z.object({
 export const FieldFeedSchema = z.object({
   model: ModelSchema,
   bbox: FieldBboxSchema,
+  center: FieldCenterSchema,
   grid: FieldGridSchema,
   t: z.array(z.iso.datetime()).min(1),
   source: z.array(z.enum(["nowcast", "forecast"])).min(1),
@@ -91,6 +97,7 @@ export const FieldFeedSchema = z.object({
 });
 
 export type FieldBbox = z.infer<typeof FieldBboxSchema>;
+export type FieldCenter = z.infer<typeof FieldCenterSchema>;
 export type FieldGrid = z.infer<typeof FieldGridSchema>;
 export type FieldFrame = z.infer<typeof FieldFrameSchema>;
 export type FieldFeed = z.infer<typeof FieldFeedSchema>;
