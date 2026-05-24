@@ -1,11 +1,11 @@
 import { AxisBottom } from "@visx/axis";
 import { Line } from "@visx/shape";
 import {
+  useEffect,
   useMemo,
   useRef,
   type PointerEvent,
   type ReactNode,
-  type TouchEvent,
 } from "react";
 
 const ARROW_LENGTH = 16;
@@ -73,6 +73,7 @@ export function ArrowTimeline({
   const nowX = xScale(times[Math.min(nowIndex, lastIndex)]);
 
   const svgRef = useRef<SVGSVGElement>(null);
+  const hitRef = useRef<HTMLDivElement>(null);
 
   const updateFromClientX = (clientX: number) => {
     const svg = svgRef.current;
@@ -85,9 +86,15 @@ export function ArrowTimeline({
     const idx = Math.round((t - t0) / step);
     setHoveredIndex(Math.max(0, Math.min(lastIndex, idx)));
   };
+  // Held in a ref so the mounted touch listeners can read the latest
+  // closure without being re-attached every render.
+  const updateRef = useRef(updateFromClientX);
+  useEffect(() => {
+    updateRef.current = updateFromClientX;
+  });
 
-  // Pointer events drive desktop mouse and most browsers. setPointerCapture
-  // keeps moves firing if the cursor drifts off the hit area mid-drag.
+  // Pointer events drive desktop mouse. setPointerCapture keeps moves
+  // firing if the cursor drifts off the hit area mid-drag.
   const handlePointerDown = (event: PointerEvent<HTMLDivElement>) => {
     event.currentTarget.setPointerCapture(event.pointerId);
     updateFromClientX(event.clientX);
@@ -96,12 +103,31 @@ export function ArrowTimeline({
     updateFromClientX(event.clientX);
   };
 
-  // Native touch events as a redundant path: iOS Safari can drop synthetic
-  // pointer events mid-gesture, but touch events always fire.
-  const handleTouch = (event: TouchEvent<HTMLDivElement>) => {
-    const touch = event.touches[0] ?? event.changedTouches[0];
-    if (touch) updateFromClientX(touch.clientX);
-  };
+  // Native (non-React) touch listeners attached via useEffect. React 19
+  // routes synthetic touch events through delegation on the root, which
+  // iOS Safari has been observed to drop for horizontal-only gestures
+  // under touch-action: pan-y. Direct DOM listeners always fire.
+  useEffect(() => {
+    const el = hitRef.current;
+    if (!el) return;
+
+    const onTouch = (event: globalThis.TouchEvent) => {
+      const touch = event.touches[0] ?? event.changedTouches[0];
+      if (touch) updateRef.current(touch.clientX);
+    };
+    const onTouchEnd = () => setHoveredIndex(null);
+
+    el.addEventListener("touchstart", onTouch, { passive: true });
+    el.addEventListener("touchmove", onTouch, { passive: true });
+    el.addEventListener("touchend", onTouchEnd, { passive: true });
+    el.addEventListener("touchcancel", onTouchEnd, { passive: true });
+    return () => {
+      el.removeEventListener("touchstart", onTouch);
+      el.removeEventListener("touchmove", onTouch);
+      el.removeEventListener("touchend", onTouchEnd);
+      el.removeEventListener("touchcancel", onTouchEnd);
+    };
+  }, [setHoveredIndex]);
 
   const hovered =
     hoveredIndex != null && hoveredIndex <= lastIndex ? hoveredIndex : null;
@@ -125,14 +151,12 @@ export function ArrowTimeline({
           children — so capture the gesture here and translate the
           coordinate against the SVG's bounding rect. */}
       <div
+        ref={hitRef}
         className={styles.hitArea}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerLeave={() => setHoveredIndex(null)}
         onPointerCancel={() => setHoveredIndex(null)}
-        onTouchStart={handleTouch}
-        onTouchMove={handleTouch}
-        onTouchEnd={() => setHoveredIndex(null)}
       >
       <svg
         ref={svgRef}
