@@ -1,7 +1,7 @@
 # Goodspeed web dashboard
 
-Astro 6 + React 19 dashboard for NOAA SFBOFS station SFB1204 — the Alcatraz-to-Marina
-swim route. Renders water temperature, currents, tide, and wind from the feed
+Astro 6 + React 19 dashboard for NOAA SFBOFS station SFB1204 (SW of Alcatraz
+Island). Renders water temperature, currents, tide, and wind from the feed
 published by `../api/`.
 
 ## Local dev

@@ -171,7 +171,7 @@ export function BayMap({ field, nowFieldIndex, pointTimes }: BayMapProps) {
     }
     return (
       `Modeled bay map across ${temps.length} water points in the ` +
-      `Alcatraz-to-Marina corridor. Water temperature ranges from ` +
+      `central San Francisco Bay near Alcatraz. Water temperature ranges from ` +
       `${minT.toFixed(1)} to ${maxT.toFixed(1)} ${tempUnit}; current speed ` +
       `${minS.toFixed(1)} to ${maxS.toFixed(1)} ${speedUnit}.`
     );

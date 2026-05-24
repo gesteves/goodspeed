@@ -2,8 +2,10 @@
 
 Astro 6 (SSR via `@astrojs/netlify`) + a React 19 island. Renders the
 swim-conditions feed published by `../api/` for NOAA SFBOFS station SFB1204
-(SW of Alcatraz Island — the Escape from Alcatraz swim route, Alcatraz →
-Marina District).
+(SW of Alcatraz Island). The Escape from Alcatraz race start point isn't
+fixed — swimmers are dropped from a boat at a location chosen on race day for
+conditions — so the dashboard surfaces conditions in the central bay near
+Alcatraz, not annotations tied to a specific route.
 
 This project used to be Next.js 16; the migration is complete and there is no
 `next/*` import anywhere. If you find one, that's a bug, not a fallback. The
