@@ -147,10 +147,11 @@ export function BayMap({ field, nowFieldIndex, pointTimes }: BayMapProps) {
 
   // Track container width so arrows can scale down on narrow screens. Without
   // scaling, the SVG arrows keep their fixed pixel size while the grid spacing
-  // shrinks, so neighbouring arrows visually collide on phones.
+  // shrinks, so neighbouring arrows visually collide on phones. ResizeObserver
+  // fires once on observe, so we don't need to seed the width synchronously --
+  // doing so would trip the `react-hooks/set-state-in-effect` lint rule.
   useEffect(() => {
     if (!container) return;
-    setContainerWidth(container.clientWidth);
     const ro = new ResizeObserver(() => {
       setContainerWidth(container.clientWidth);
     });
@@ -159,6 +160,9 @@ export function BayMap({ field, nowFieldIndex, pointTimes }: BayMapProps) {
   }, [container]);
 
   const arrowScale = useMemo(() => {
+    // 0 = not measured yet (ResizeObserver hasn't fired). Avoid flashing tiny
+    // arrows by treating that as full scale until we have a real width.
+    if (containerWidth === 0) return 1;
     if (containerWidth >= 640) return 1;
     if (containerWidth <= 320) return 0.55;
     return 0.55 + ((containerWidth - 320) / 320) * 0.45;
