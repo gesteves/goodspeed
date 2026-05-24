@@ -1,7 +1,12 @@
 import { AxisBottom } from "@visx/axis";
-import { localPoint } from "@visx/event";
-import { Bar, Line } from "@visx/shape";
-import { useMemo, type PointerEvent, type ReactNode } from "react";
+import { Line } from "@visx/shape";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  type PointerEvent,
+  type ReactNode,
+} from "react";
 
 const ARROW_LENGTH = 16;
 import { formatAxisTick } from "@/lib/format";
@@ -67,15 +72,62 @@ export function ArrowTimeline({
   const lastIndex = data.length - 1;
   const nowX = xScale(times[Math.min(nowIndex, lastIndex)]);
 
-  const handleMove = (event: PointerEvent<SVGRectElement>) => {
-    const point = localPoint(event);
-    if (!point) return;
-    const t = xScale.invert(point.x).getTime();
+  const svgRef = useRef<SVGSVGElement>(null);
+  const hitRef = useRef<HTMLDivElement>(null);
+
+  const updateFromClientX = (clientX: number) => {
+    const svg = svgRef.current;
+    if (!svg) return;
+    const rect = svg.getBoundingClientRect();
+    const px = clientX - rect.left;
+    const t = xScale.invert(px).getTime();
     const t0 = times[0].getTime();
     const step = times.length > 1 ? times[1].getTime() - t0 : 360_000;
     const idx = Math.round((t - t0) / step);
     setHoveredIndex(Math.max(0, Math.min(lastIndex, idx)));
   };
+  // Held in a ref so the mounted touch listeners can read the latest
+  // closure without being re-attached every render.
+  const updateRef = useRef(updateFromClientX);
+  useEffect(() => {
+    updateRef.current = updateFromClientX;
+  });
+
+  // Pointer events drive desktop mouse. setPointerCapture keeps moves
+  // firing if the cursor drifts off the hit area mid-drag.
+  const handlePointerDown = (event: PointerEvent<HTMLDivElement>) => {
+    event.currentTarget.setPointerCapture(event.pointerId);
+    updateFromClientX(event.clientX);
+  };
+  const handlePointerMove = (event: PointerEvent<HTMLDivElement>) => {
+    updateFromClientX(event.clientX);
+  };
+
+  // Native (non-React) touch listeners attached via useEffect. React 19
+  // routes synthetic touch events through delegation on the root, which
+  // iOS Safari has been observed to drop for horizontal-only gestures
+  // under touch-action: pan-y. Direct DOM listeners always fire.
+  useEffect(() => {
+    const el = hitRef.current;
+    if (!el) return;
+
+    const onTouch = (event: globalThis.TouchEvent) => {
+      const touch = event.touches[0] ?? event.changedTouches[0];
+      if (touch) updateRef.current(touch.clientX);
+    };
+    const onTouchEnd = () => setHoveredIndex(null);
+
+    el.addEventListener("touchstart", onTouch, { passive: true });
+    el.addEventListener("touchmove", onTouch, { passive: true });
+    el.addEventListener("touchend", onTouchEnd, { passive: true });
+    el.addEventListener("touchcancel", onTouchEnd, { passive: true });
+    return () => {
+      el.removeEventListener("touchstart", onTouch);
+      el.removeEventListener("touchmove", onTouch);
+      el.removeEventListener("touchend", onTouchEnd);
+      el.removeEventListener("touchcancel", onTouchEnd);
+    };
+  }, [setHoveredIndex]);
 
   const hovered =
     hoveredIndex != null && hoveredIndex <= lastIndex ? hoveredIndex : null;
@@ -94,7 +146,20 @@ export function ArrowTimeline({
         {readout}
       </figcaption>
 
+      {/* HTML hit area: iOS Safari fires pointer events and honours
+          touch-action reliably on HTML elements, but not on SVG <rect>
+          children — so capture the gesture here and translate the
+          coordinate against the SVG's bounding rect. */}
+      <div
+        ref={hitRef}
+        className={styles.hitArea}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerLeave={() => setHoveredIndex(null)}
+        onPointerCancel={() => setHoveredIndex(null)}
+      >
       <svg
+        ref={svgRef}
         width={width}
         height={HEIGHT}
         role="img"
@@ -167,19 +232,8 @@ export function ArrowTimeline({
           }}
         />
 
-        <Bar
-          x={m.left}
-          y={m.top}
-          width={innerWidth}
-          height={bandHeight}
-          fill="transparent"
-          style={{ touchAction: "pan-y" }}
-          onPointerMove={handleMove}
-          onPointerDown={handleMove}
-          onPointerLeave={() => setHoveredIndex(null)}
-          onPointerCancel={() => setHoveredIndex(null)}
-        />
       </svg>
+      </div>
     </figure>
   );
 }
