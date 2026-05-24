@@ -102,7 +102,7 @@ function DirectionReadout({
       <span className={styles.readoutMain}>
         {slack ? (
           <>
-            <span className={`${styles.readoutValue} tnum`}>-°</span>
+            <span className={`${styles.readoutValue} tnum`}>–°</span>
             <span className={styles.readoutUnit}>slack</span>
           </>
         ) : (
