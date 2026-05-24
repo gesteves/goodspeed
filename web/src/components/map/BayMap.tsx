@@ -62,6 +62,7 @@ function pickStyle(theme: "system" | "light" | "dark"): string {
 export function BayMap({ field, nowFieldIndex, pointTimes }: BayMapProps) {
   const [container, setContainer] = useState<HTMLDivElement | null>(null);
   const [map, setMap] = useState<mapboxgl.Map | null>(null);
+  const [containerWidth, setContainerWidth] = useState(0);
   const { theme } = useTheme();
   const { units } = useUnits();
   const { hoveredIndex } = useScrub();
@@ -144,6 +145,25 @@ export function BayMap({ field, nowFieldIndex, pointTimes }: BayMapProps) {
     map.setStyle(pickStyle(theme));
   }, [theme, map]);
 
+  // Track container width so arrows can scale down on narrow screens. Without
+  // scaling, the SVG arrows keep their fixed pixel size while the grid spacing
+  // shrinks, so neighbouring arrows visually collide on phones.
+  useEffect(() => {
+    if (!container) return;
+    setContainerWidth(container.clientWidth);
+    const ro = new ResizeObserver(() => {
+      setContainerWidth(container.clientWidth);
+    });
+    ro.observe(container);
+    return () => ro.disconnect();
+  }, [container]);
+
+  const arrowScale = useMemo(() => {
+    if (containerWidth >= 640) return 1;
+    if (containerWidth <= 320) return 0.55;
+    return 0.55 + ((containerWidth - 320) / 320) * 0.45;
+  }, [containerWidth]);
+
   const positions = useMapPositions(map, field.grid.lat, field.grid.lon);
 
   const frame =
@@ -191,6 +211,7 @@ export function BayMap({ field, nowFieldIndex, pointTimes }: BayMapProps) {
               bearing={frame.current_bearing_deg[i]}
               speedKt={frame.current_speed_kt[i]}
               tempC={frame.water_temp_c[i]}
+              scale={arrowScale}
             />
           ))}
         </svg>
@@ -206,12 +227,14 @@ function Arrow({
   bearing,
   speedKt,
   tempC,
+  scale,
 }: {
   x: number;
   y: number;
   bearing: number;
   speedKt: number;
   tempC: number;
+  scale: number;
 }) {
   const color = tempColor(tempC);
   if (speedKt < 0.08) {
@@ -219,14 +242,18 @@ function Arrow({
       <circle
         cx={x}
         cy={y}
-        r={3}
+        r={3 * scale}
         fill="none"
         stroke={color}
-        strokeWidth={2}
+        strokeWidth={2 * scale}
       />
     );
   }
-  const len = arrowPx(speedKt);
+  const len = arrowPx(speedKt) * scale;
+  const headHalf = 4.5 * scale;
+  const headBack = 5 * scale;
+  const headFront = 3 * scale;
+  const shaftPad = 4 * scale;
   const tip = -len / 2;
   return (
     <g transform={`rotate(${bearing} ${x} ${y})`}>
@@ -234,13 +261,13 @@ function Arrow({
         x1={x}
         y1={y + len / 2}
         x2={x}
-        y2={y + tip + 4}
+        y2={y + tip + shaftPad}
         stroke={color}
-        strokeWidth={3}
+        strokeWidth={3 * scale}
         strokeLinecap="round"
       />
       <polygon
-        points={`${x},${y + tip - 3} ${x - 4.5},${y + tip + 5} ${x + 4.5},${y + tip + 5}`}
+        points={`${x},${y + tip - headFront} ${x - headHalf},${y + tip + headBack} ${x + headHalf},${y + tip + headBack}`}
         fill={color}
       />
     </g>
