@@ -40,12 +40,18 @@
   pointer-events: none;
 }
 
+/* The map is fully static (panning/zooming disabled), so suppress Mapbox's
+   default grab cursor — it advertises an affordance that doesn't exist. */
+.wrap :global(.mapboxgl-canvas-container),
+.wrap :global(.mapboxgl-canvas) {
+  cursor: default;
+}
+
 /* ---- Legend overlay ---- */
 .legend {
   position: absolute;
-  /* Bottom offset clears Mapbox's attribution control in the same corner. */
-  bottom: 32px;
-  right: 12px;
+  top: 12px;
+  left: 12px;
   display: flex;
   flex-direction: column;
   gap: 8px;
