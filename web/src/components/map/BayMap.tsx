@@ -30,8 +30,8 @@ const FINISH_LON = -122.4480366321103;
 // Race start: boat drop on race day, location chosen for conditions. The
 // disk is centered on Alcatraz with a radius that covers the rough envelope
 // of likely drop points -- a few hundred metres, no fixed heading.
-const START_LAT = 37.82580604291092;
-const START_LON = -122.42147681725021;
+const START_LAT = 37.82666939246081;
+const START_LON = -122.42268871139198;
 
 function offsetLonByMeters(lat: number, lon: number, meters: number): number {
   return lon + meters / (111_320 * Math.cos((lat * Math.PI) / 180));
@@ -280,20 +280,25 @@ export function BayMap({ field, nowFieldIndex, pointTimes }: BayMapProps) {
               scale={arrowScale}
             />
           ))}
-          {startPx && startRadiusPx > 0 && finishPx && (
-            <>
-              {(() => {
-                const r = Math.max(startRadiusPx, 36 * arrowScale);
-                // Align the gradient axis with the start->finish bearing
-                // (in projected pixel space). Transparent end sits on the
-                // side away from the finish; opaque end sits on the side
-                // facing it -- only the shore-facing arc is plausible.
-                const dx = finishPx.x - startPx.x;
-                const dy = finishPx.y - startPx.y;
-                const len = Math.hypot(dx, dy) || 1;
-                const ux = dx / len;
-                const uy = dy / len;
-                return (
+          {startPx &&
+            startRadiusPx > 0 &&
+            finishPx &&
+            (() => {
+              const r = Math.max(startRadiusPx, 36 * arrowScale);
+              // Unit vector from the ring centre toward the finish (projected
+              // pixel space). Reused for both the gradient axis and the
+              // label anchor on the SW edge of the ring.
+              const dx = finishPx.x - startPx.x;
+              const dy = finishPx.y - startPx.y;
+              const len = Math.hypot(dx, dy) || 1;
+              const ux = dx / len;
+              const uy = dy / len;
+              // Label sits centered below the ring -- simple and reliable
+              // regardless of where the start/finish bearing points.
+              const labelX = startPx.x;
+              const labelY = startPx.y + r + 14;
+              return (
+                <>
                   <defs>
                     <linearGradient
                       id="bayMap-startRing"
@@ -305,33 +310,30 @@ export function BayMap({ field, nowFieldIndex, pointTimes }: BayMapProps) {
                     >
                       <stop offset="0%" stopColor="var(--text)" stopOpacity="0" />
                       <stop offset="50%" stopColor="var(--text)" stopOpacity="0" />
-                      <stop offset="75%" stopColor="var(--text)" stopOpacity="1" />
                       <stop offset="100%" stopColor="var(--text)" stopOpacity="1" />
                     </linearGradient>
                   </defs>
-                );
-              })()}
-              <circle
-                cx={startPx.x}
-                cy={startPx.y}
-                r={Math.max(startRadiusPx, 36 * arrowScale)}
-                fill="none"
-                stroke="url(#bayMap-startRing)"
-                strokeWidth={1.5 * arrowScale}
-                strokeDasharray={`${5 * arrowScale} ${4 * arrowScale}`}
-                className={styles.startZone}
-              />
-              <text
-                x={startPx.x}
-                y={startPx.y}
-                textAnchor="middle"
-                dominantBaseline="text-before-edge"
-                className={styles.markerLabel}
-              >
-                Swim start
-              </text>
-            </>
-          )}
+                  <circle
+                    cx={startPx.x}
+                    cy={startPx.y}
+                    r={r}
+                    fill="none"
+                    stroke="url(#bayMap-startRing)"
+                    strokeWidth={1.5 * arrowScale}
+                    strokeDasharray={`${5 * arrowScale} ${4 * arrowScale}`}
+                    className={styles.startZone}
+                  />
+                  <text
+                    x={labelX}
+                    y={labelY}
+                    textAnchor="middle"
+                    className={styles.markerLabel}
+                  >
+                    Swim start
+                  </text>
+                </>
+              );
+            })()}
           {finishPx && (
             <>
               <FinishBullseye x={finishPx.x} y={finishPx.y} scale={arrowScale} />
