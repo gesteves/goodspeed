@@ -305,7 +305,7 @@ export function ForecastCharts(props: ForecastChartsProps) {
     <section className={styles.section} aria-label="48-hour forecast">
       <h2 className={styles.sectionTitle}>Forecast</h2>
       <div className={styles.stack}>
-        <ParentSize debounceTime={0} parentSizeStyles={{ width: "100%" }}>
+        <ParentSize debounceTime={0} style={{ width: "100%" }}>
           {({ width }) =>
             width > 1 ? (
               <ChartStack width={width} {...props} />

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import type mapboxgl from "mapbox-gl";
+import type { Map as MapboxMap } from "mapbox-gl";
 
 export interface PixelPosition {
   x: number;
@@ -14,7 +14,7 @@ export interface PixelPosition {
  * lat/lon arrays, returns the corresponding pixel coordinates.
  */
 export function useMapPositions(
-  map: mapboxgl.Map | null,
+  map: MapboxMap | null,
   lats: readonly number[] | Float64Array,
   lons: readonly number[] | Float64Array,
 ): PixelPosition[] {
