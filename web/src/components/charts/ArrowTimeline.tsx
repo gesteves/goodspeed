@@ -1,6 +1,12 @@
 import { AxisBottom } from "@visx/axis";
 import { Line } from "@visx/shape";
-import { useMemo, useRef, type PointerEvent, type ReactNode } from "react";
+import {
+  useMemo,
+  useRef,
+  type PointerEvent,
+  type ReactNode,
+  type TouchEvent,
+} from "react";
 
 const ARROW_LENGTH = 16;
 import { formatAxisTick } from "@/lib/format";
@@ -68,11 +74,11 @@ export function ArrowTimeline({
 
   const svgRef = useRef<SVGSVGElement>(null);
 
-  const handleMove = (event: PointerEvent<HTMLDivElement>) => {
+  const updateFromClientX = (clientX: number) => {
     const svg = svgRef.current;
     if (!svg) return;
     const rect = svg.getBoundingClientRect();
-    const px = event.clientX - rect.left;
+    const px = clientX - rect.left;
     const t = xScale.invert(px).getTime();
     const t0 = times[0].getTime();
     const step = times.length > 1 ? times[1].getTime() - t0 : 360_000;
@@ -80,12 +86,21 @@ export function ArrowTimeline({
     setHoveredIndex(Math.max(0, Math.min(lastIndex, idx)));
   };
 
-  // Captures the pointer on touchdown so move events keep firing even if
-  // the finger drifts off the hit area — without this, iOS Safari drops
-  // the scrub mid-drag.
-  const handleDown = (event: PointerEvent<HTMLDivElement>) => {
+  // Pointer events drive desktop mouse and most browsers. setPointerCapture
+  // keeps moves firing if the cursor drifts off the hit area mid-drag.
+  const handlePointerDown = (event: PointerEvent<HTMLDivElement>) => {
     event.currentTarget.setPointerCapture(event.pointerId);
-    handleMove(event);
+    updateFromClientX(event.clientX);
+  };
+  const handlePointerMove = (event: PointerEvent<HTMLDivElement>) => {
+    updateFromClientX(event.clientX);
+  };
+
+  // Native touch events as a redundant path: iOS Safari can drop synthetic
+  // pointer events mid-gesture, but touch events always fire.
+  const handleTouch = (event: TouchEvent<HTMLDivElement>) => {
+    const touch = event.touches[0] ?? event.changedTouches[0];
+    if (touch) updateFromClientX(touch.clientX);
   };
 
   const hovered =
@@ -111,10 +126,13 @@ export function ArrowTimeline({
           coordinate against the SVG's bounding rect. */}
       <div
         className={styles.hitArea}
-        onPointerDown={handleDown}
-        onPointerMove={handleMove}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
         onPointerLeave={() => setHoveredIndex(null)}
         onPointerCancel={() => setHoveredIndex(null)}
+        onTouchStart={handleTouch}
+        onTouchMove={handleTouch}
+        onTouchEnd={() => setHoveredIndex(null)}
       >
       <svg
         ref={svgRef}
