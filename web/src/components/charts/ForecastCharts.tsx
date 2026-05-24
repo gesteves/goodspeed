@@ -88,19 +88,28 @@ function DirectionReadout({
   relation,
   compass,
   time,
+  slack = false,
 }: {
   degrees: number;
   relation: string;
   compass: string;
   time: string;
+  /** When true, suppress the degree/compass values and show "Slack". */
+  slack?: boolean;
 }) {
   return (
     <span className={styles.readout} aria-live="polite">
       <span className={styles.readoutMain}>
-        <span className={`${styles.readoutValue} tnum`}>{degrees}°</span>
-        <span className={styles.readoutUnit}>
-          {relation} {compass}
-        </span>
+        {slack ? (
+          <span className={`${styles.readoutValue} tnum`}>Slack</span>
+        ) : (
+          <>
+            <span className={`${styles.readoutValue} tnum`}>{degrees}°</span>
+            <span className={styles.readoutUnit}>
+              {relation} {compass}
+            </span>
+          </>
+        )}
       </span>
       <span className={styles.readoutTime}>{time}</span>
     </span>
@@ -219,9 +228,12 @@ function ChartStack({
         readout={
           <DirectionReadout
             degrees={Math.round(dp.current_bearing_deg)}
-            relation="toward"
+            relation={
+              classifyCurrent(dp) === "flood" ? "flooding" : "ebbing"
+            }
             compass={compass16(dp.current_bearing_deg)}
             time={timeLabel}
+            slack={classifyCurrent(dp) === "slack"}
           />
         }
       />

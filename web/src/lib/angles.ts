@@ -16,3 +16,14 @@ export function compass16(deg: number): string {
   const i = Math.round((((deg % 360) + 360) % 360) / 22.5) % 16;
   return COMPASS_16[i];
 }
+
+const COMPASS_8_WORD = [
+  "north", "northeast", "east", "southeast",
+  "south", "southwest", "west", "northwest",
+];
+
+/** Nearest 8-point compass label, lowercased and spelled out (e.g. "northeast"). */
+export function compass8Word(deg: number): string {
+  const i = Math.round((((deg % 360) + 360) % 360) / 45) % 8;
+  return COMPASS_8_WORD[i];
+}

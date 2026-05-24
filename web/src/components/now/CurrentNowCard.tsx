@@ -1,4 +1,4 @@
-import { compass16 } from "@/lib/angles";
+import { compass8Word } from "@/lib/angles";
 import { classifyCurrent } from "@/lib/derive/currents";
 import { formatNumber } from "@/lib/format";
 import type { TimeseriesPoint } from "@/lib/schema";
@@ -11,8 +11,8 @@ import {
 import styles from "./now.module.css";
 
 const PHASE_LABEL: Record<string, string> = {
-  flood: "Flood",
-  ebb: "Ebb",
+  flood: "Flooding",
+  ebb: "Ebbing",
   slack: "Slack",
 };
 
@@ -31,7 +31,7 @@ export function CurrentNowCard({
   const sub =
     phase === "slack"
       ? "Slack · Minimal current"
-      : `${PHASE_LABEL[phase]} · Toward ${compass16(
+      : `${PHASE_LABEL[phase]} ${compass8Word(
           point.current_bearing_deg,
         )}`;
 
