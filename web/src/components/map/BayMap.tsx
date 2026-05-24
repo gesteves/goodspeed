@@ -23,6 +23,42 @@ export interface BayMapProps {
 const LIGHT_STYLE = "mapbox://styles/mapbox/light-v11";
 const DARK_STYLE = "mapbox://styles/mapbox/dark-v11";
 
+// Race finish: St. Francis Yacht Club.
+const FINISH_LAT = 37.80706968914476;
+const FINISH_LON = -122.4480366321103;
+
+// Race start: boat drop on race day, location chosen for conditions. The
+// disk is centered on Alcatraz with a radius that covers the rough envelope
+// of likely drop points -- a few hundred metres, no fixed heading.
+const START_LAT = 37.82580604291092;
+const START_LON = -122.42147681725021;
+
+function offsetLonByMeters(lat: number, lon: number, meters: number): number {
+  return lon + meters / (111_320 * Math.cos((lat * Math.PI) / 180));
+}
+
+function haversineMeters(
+  lat1: number,
+  lon1: number,
+  lat2: number,
+  lon2: number,
+): number {
+  const R = 6_371_000;
+  const toRad = (deg: number) => (deg * Math.PI) / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+  return 2 * R * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+// Sized so the edge of the ring sits 1.5 miles from the finish: a swimmer
+// dropped anywhere on the visible arc has at most 1.5 mi of water to cover.
+const START_RADIUS_M =
+  haversineMeters(START_LAT, START_LON, FINISH_LAT, FINISH_LON) -
+  1.5 * 1609.344;
+
 /** Use the chart scrub to pick a frame in the field feed (snap by timestamp). */
 function useFieldFrameIndex(
   hovered: number | null,
@@ -170,6 +206,30 @@ export function BayMap({ field, nowFieldIndex, pointTimes }: BayMapProps) {
 
   const positions = useMapPositions(map, field.grid.lat, field.grid.lon);
 
+  // Project the start centre + an edge point + the finish in one call so we
+  // get a geographically-stable radius for the start disk (the map auto-fits
+  // to its bounds, so px-per-metre changes with container width).
+  const markerLats = useMemo(
+    () => [START_LAT, START_LAT, FINISH_LAT],
+    [],
+  );
+  const markerLons = useMemo(
+    () => [
+      START_LON,
+      offsetLonByMeters(START_LAT, START_LON, START_RADIUS_M),
+      FINISH_LON,
+    ],
+    [],
+  );
+  const markerPositions = useMapPositions(map, markerLats, markerLons);
+  const startPx = markerPositions[0];
+  const startEdgePx = markerPositions[1];
+  const finishPx = markerPositions[2];
+  const startRadiusPx =
+    startPx && startEdgePx
+      ? Math.hypot(startEdgePx.x - startPx.x, startEdgePx.y - startPx.y)
+      : 0;
+
   const frame =
     field.frames[
       Math.min(Math.max(0, fieldIndex), field.frames.length - 1)
@@ -197,7 +257,9 @@ export function BayMap({ field, nowFieldIndex, pointTimes }: BayMapProps) {
       `Modeled bay map across ${temps.length} water points in the ` +
       `central San Francisco Bay near Alcatraz. Water temperature ranges from ` +
       `${minT.toFixed(1)} to ${maxT.toFixed(1)} ${tempUnit}; current speed ` +
-      `${minS.toFixed(1)} to ${maxS.toFixed(1)} ${speedUnit}.`
+      `${minS.toFixed(1)} to ${maxS.toFixed(1)} ${speedUnit}. Race start is a ` +
+      `boat drop near Alcatraz at a location chosen on race day; the finish ` +
+      `is at the St. Francis Yacht Club.`
     );
   }, [frame, units]);
 
@@ -218,10 +280,93 @@ export function BayMap({ field, nowFieldIndex, pointTimes }: BayMapProps) {
               scale={arrowScale}
             />
           ))}
+          {startPx && startRadiusPx > 0 && finishPx && (
+            <>
+              {(() => {
+                const r = Math.max(startRadiusPx, 36 * arrowScale);
+                // Align the gradient axis with the start->finish bearing
+                // (in projected pixel space). Transparent end sits on the
+                // side away from the finish; opaque end sits on the side
+                // facing it -- only the shore-facing arc is plausible.
+                const dx = finishPx.x - startPx.x;
+                const dy = finishPx.y - startPx.y;
+                const len = Math.hypot(dx, dy) || 1;
+                const ux = dx / len;
+                const uy = dy / len;
+                return (
+                  <defs>
+                    <linearGradient
+                      id="bayMap-startRing"
+                      gradientUnits="userSpaceOnUse"
+                      x1={startPx.x - r * ux}
+                      y1={startPx.y - r * uy}
+                      x2={startPx.x + r * ux}
+                      y2={startPx.y + r * uy}
+                    >
+                      <stop offset="0%" stopColor="var(--text)" stopOpacity="0" />
+                      <stop offset="50%" stopColor="var(--text)" stopOpacity="0" />
+                      <stop offset="75%" stopColor="var(--text)" stopOpacity="1" />
+                      <stop offset="100%" stopColor="var(--text)" stopOpacity="1" />
+                    </linearGradient>
+                  </defs>
+                );
+              })()}
+              <circle
+                cx={startPx.x}
+                cy={startPx.y}
+                r={Math.max(startRadiusPx, 36 * arrowScale)}
+                fill="none"
+                stroke="url(#bayMap-startRing)"
+                strokeWidth={1.5 * arrowScale}
+                strokeDasharray={`${5 * arrowScale} ${4 * arrowScale}`}
+                className={styles.startZone}
+              />
+              <text
+                x={startPx.x}
+                y={startPx.y}
+                textAnchor="middle"
+                dominantBaseline="text-top"
+                className={styles.markerLabel}
+              >
+                Swim start
+              </text>
+            </>
+          )}
+          {finishPx && (
+            <>
+              <FinishBullseye x={finishPx.x} y={finishPx.y} scale={arrowScale} />
+              <text
+                x={finishPx.x}
+                y={finishPx.y - 14 * arrowScale}
+                textAnchor="middle"
+                className={styles.markerLabel}
+              >
+                Swim finish
+              </text>
+            </>
+          )}
         </svg>
       )}
       <MapLegend units={units} />
     </div>
+  );
+}
+
+function FinishBullseye({
+  x,
+  y,
+  scale,
+}: {
+  x: number;
+  y: number;
+  scale: number;
+}) {
+  return (
+    <g transform={`translate(${x} ${y})`} className={styles.finishBullseye}>
+      <circle cx={0} cy={0} r={8 * scale} fill="none" strokeWidth={1.5 * scale} />
+      <circle cx={0} cy={0} r={5 * scale} fill="none" strokeWidth={1.2 * scale} />
+      <circle cx={0} cy={0} r={2 * scale} className={styles.finishBullseyeCenter} />
+    </g>
   );
 }
 

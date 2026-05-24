@@ -40,6 +40,46 @@
   pointer-events: none;
 }
 
+/* Start zone -- dashed arc around Alcatraz indicating the boat-drop area
+   (exact point chosen on race day). The stroke is a vertical linear gradient
+   defined inline in the SVG so the north (bay-ocean) half fades out; only
+   the side closer to shore is a real candidate for the drop. --opacity
+   keeps the visible portion from competing with the data layers. */
+.startZone {
+  opacity: 0.55;
+}
+
+/* Shared label style for the start/finish markers. paint-order + a
+   --surface-colored stroke gives the text a soft halo so it stays legible
+   over any map tile without dominating the design. */
+.markerLabel {
+  fill: var(--text-muted);
+  font-family: var(--font-geist-sans);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-anchor: middle;
+  paint-order: stroke fill;
+  stroke: var(--surface);
+  stroke-opacity: 0.65;
+  stroke-width: 1.5px;
+  stroke-linejoin: round;
+}
+
+/* Finish marker -- bullseye at St. Francis Yacht Club. Matches the start
+   ring's tone (--text @ 0.55 opacity) so the two markers read as a set. */
+.finishBullseye {
+  opacity: 0.55;
+}
+
+.finishBullseye circle {
+  stroke: var(--text);
+}
+
+.finishBullseyeCenter {
+  fill: var(--text);
+  stroke: none;
+}
+
 /* The map is fully static (panning/zooming disabled), so suppress Mapbox's
    default grab cursor — it advertises an affordance that doesn't exist. */
 .wrap :global(.mapboxgl-canvas-container),
