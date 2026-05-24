@@ -101,7 +101,10 @@ function DirectionReadout({
     <span className={styles.readout} aria-live="polite">
       <span className={styles.readoutMain}>
         {slack ? (
-          <span className={styles.readoutUnit}>Slack</span>
+          <>
+            <span className={`${styles.readoutValue} tnum`}>-°</span>
+            <span className={styles.readoutUnit}>slack</span>
+          </>
         ) : (
           <>
             <span className={`${styles.readoutValue} tnum`}>{degrees}°</span>
