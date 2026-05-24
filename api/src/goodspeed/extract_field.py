@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import logging
 import math
+import time
 from dataclasses import dataclass
 from datetime import UTC, datetime
 
@@ -201,9 +202,17 @@ def load_field_grid(
     shared_lat: np.ndarray | None = None
     shared_lon: np.ndarray | None = None
     failures = 0
+    total = len(hours)
+    phase_started = time.monotonic()
 
-    for hour in hours:
+    log.info(
+        "field.phase.start",
+        extra={"phase": phase, "cycle": cycle.iso(), "total_hours": total},
+    )
+
+    for idx, hour in enumerate(hours, start=1):
         url = regulargrid_dods_url(cycle, phase, hour)
+        hour_started = time.monotonic()
         try:
             frame = load_field_frame(url, bbox)
         except (OSError, ValueError) as exc:
@@ -219,6 +228,8 @@ def load_field_grid(
                     "url": url,
                     "phase": phase,
                     "hour": hour,
+                    "progress": f"{idx}/{total}",
+                    "elapsed_s": round(time.monotonic() - hour_started, 2),
                     "error": f"{type(exc).__name__}: {exc}",
                 },
             )
@@ -234,7 +245,12 @@ def load_field_grid(
             failures += 1
             log.warning(
                 "field.hour.grid_mismatch",
-                extra={"url": url, "phase": phase, "hour": hour},
+                extra={
+                    "url": url,
+                    "phase": phase,
+                    "hour": hour,
+                    "progress": f"{idx}/{total}",
+                },
             )
             continue
 
@@ -242,6 +258,16 @@ def load_field_grid(
         temp_rows.append(np.asarray(frame["temp_c"]))
         u_rows.append(np.asarray(frame["u_ms"]))
         v_rows.append(np.asarray(frame["v_ms"]))
+        log.info(
+            "field.hour.loaded",
+            extra={
+                "phase": phase,
+                "hour": hour,
+                "progress": f"{idx}/{total}",
+                "elapsed_s": round(time.monotonic() - hour_started, 2),
+                "grid_points": int(np.asarray(frame["lat"]).size),
+            },
+        )
 
     if not times:
         raise ValueError(
@@ -251,6 +277,17 @@ def load_field_grid(
         raise ValueError(
             f"Too many failed hours for phase={phase!r}: {failures}/{len(hours)}"
         )
+
+    log.info(
+        "field.phase.done",
+        extra={
+            "phase": phase,
+            "loaded": len(times),
+            "failed": failures,
+            "total_hours": total,
+            "elapsed_s": round(time.monotonic() - phase_started, 2),
+        },
+    )
 
     assert shared_lat is not None and shared_lon is not None
     return FieldGrid(
