@@ -78,11 +78,15 @@ function tempColor(tempC: number): string {
   return `rgb(${r},${g},${bl})`;
 }
 
-// Linear scaling kt -> px, matching MapLegend.arrowPx.
+// Linear scaling kt -> px, matching MapLegend.arrowPx. ARROW_SCALE mirrors
+// the live map's `arrowScale` knob -- the OG canvas is wider than the
+// dashboard map so the arrows read a touch small at scale 1.
+const ARROW_SCALE = 1.4;
 function arrowPx(speedKt: number): number {
   const MIN = 14;
   const MAX = 32;
-  return MIN + Math.min(1, Math.max(0, speedKt / 2.5)) * (MAX - MIN);
+  return (MIN + Math.min(1, Math.max(0, speedKt / 2.5)) * (MAX - MIN)) *
+    ARROW_SCALE;
 }
 
 // Minimal Zod schema -- only the fields the OG needs. Edge functions cannot
@@ -232,10 +236,10 @@ export default async function handler(_req: Request): Promise<Response> {
           key={i}
           cx={x}
           cy={y}
-          r={3}
+          r={3 * ARROW_SCALE}
           fill="none"
           stroke={color}
-          strokeWidth={2}
+          strokeWidth={2 * ARROW_SCALE}
         />,
       );
       continue;
@@ -243,10 +247,10 @@ export default async function handler(_req: Request): Promise<Response> {
     const len = arrowPx(sp);
     const tip = -len / 2;
     const bearing = frame.current_bearing_deg[i];
-    const headHalf = 4.5;
-    const headBack = 5;
-    const headFront = 3;
-    const shaftPad = 4;
+    const headHalf = 4.5 * ARROW_SCALE;
+    const headBack = 5 * ARROW_SCALE;
+    const headFront = 3 * ARROW_SCALE;
+    const shaftPad = 4 * ARROW_SCALE;
     arrows.push(
       <g key={i} transform={`rotate(${bearing} ${x} ${y})`}>
         <line
@@ -255,7 +259,7 @@ export default async function handler(_req: Request): Promise<Response> {
           x2={x}
           y2={y + tip + shaftPad}
           stroke={color}
-          strokeWidth={3}
+          strokeWidth={3 * ARROW_SCALE}
           strokeLinecap="round"
         />
         <polygon
