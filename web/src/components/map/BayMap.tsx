@@ -325,7 +325,7 @@ export function BayMap({ field, nowFieldIndex, pointTimes }: BayMapProps) {
                 x={startPx.x}
                 y={startPx.y}
                 textAnchor="middle"
-                dominantBaseline="text-top"
+                dominantBaseline="text-before-edge"
                 className={styles.markerLabel}
               >
                 Swim start
