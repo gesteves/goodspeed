@@ -1,10 +1,9 @@
 import { AxisBottom, AxisLeft } from "@visx/axis";
 import { curveMonotoneX } from "@visx/curve";
-import { localPoint } from "@visx/event";
 import { GridRows } from "@visx/grid";
 import { scaleLinear } from "@visx/scale";
-import { AreaClosed, Bar, Line, LinePath } from "@visx/shape";
-import { useMemo, type PointerEvent, type ReactNode } from "react";
+import { AreaClosed, Line, LinePath } from "@visx/shape";
+import { useMemo, useRef, type PointerEvent, type ReactNode } from "react";
 import { formatAxisTick } from "@/lib/format";
 import type { TimeseriesPoint } from "@/lib/schema";
 import styles from "./charts.module.css";
@@ -88,10 +87,14 @@ export function TimeSeriesChart({
 
   const nowX = x(Math.min(nowIndex, data.length - 1));
 
-  const handleMove = (event: PointerEvent<SVGRectElement>) => {
-    const point = localPoint(event);
-    if (!point) return;
-    const t = xScale.invert(point.x).getTime();
+  const svgRef = useRef<SVGSVGElement>(null);
+
+  const handleMove = (event: PointerEvent<HTMLDivElement>) => {
+    const svg = svgRef.current;
+    if (!svg) return;
+    const rect = svg.getBoundingClientRect();
+    const px = event.clientX - rect.left;
+    const t = xScale.invert(px).getTime();
     const t0 = times[0].getTime();
     const step = times.length > 1 ? times[1].getTime() - t0 : 360_000;
     const idx = Math.round((t - t0) / step);
@@ -99,9 +102,9 @@ export function TimeSeriesChart({
   };
 
   // Captures the pointer on touchdown so move events keep firing even if
-  // the finger drifts off the bar — without this, iOS Safari drops the
-  // scrub mid-drag.
-  const handleDown = (event: PointerEvent<SVGRectElement>) => {
+  // the finger drifts off the hit area — without this, iOS Safari drops
+  // the scrub mid-drag.
+  const handleDown = (event: PointerEvent<HTMLDivElement>) => {
     event.currentTarget.setPointerCapture(event.pointerId);
     handleMove(event);
   };
@@ -123,7 +126,19 @@ export function TimeSeriesChart({
         {readout}
       </figcaption>
 
+      {/* HTML hit area: iOS Safari fires pointer events and honours
+          touch-action reliably on HTML elements, but not on SVG <rect>
+          children — so capture the gesture here and translate the
+          coordinate against the SVG's bounding rect. */}
+      <div
+        className={styles.hitArea}
+        onPointerDown={handleDown}
+        onPointerMove={handleMove}
+        onPointerLeave={() => setHoveredIndex(null)}
+        onPointerCancel={() => setHoveredIndex(null)}
+      >
       <svg
+        ref={svgRef}
         width={width}
         height={height}
         role="img"
@@ -211,20 +226,8 @@ export function TimeSeriesChart({
           tickLabelProps={{ ...tickLabelProps, textAnchor: "middle" }}
         />
 
-        {/* Pointer capture overlay. touch-action: pan-y is set on the
-            parent <svg> in CSS so iOS honors it. */}
-        <Bar
-          x={m.left}
-          y={m.top}
-          width={innerWidth}
-          height={innerHeight}
-          fill="transparent"
-          onPointerDown={handleDown}
-          onPointerMove={handleMove}
-          onPointerLeave={() => setHoveredIndex(null)}
-          onPointerCancel={() => setHoveredIndex(null)}
-        />
       </svg>
+      </div>
     </figure>
   );
 }
