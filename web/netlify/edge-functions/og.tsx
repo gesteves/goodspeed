@@ -249,7 +249,7 @@ export default async function handler(_req: Request): Promise<Response> {
       "content-type": "image/png",
       "cache-control": "public, max-age=60",
       "Netlify-CDN-Cache-Control":
-        "public, s-maxage=360, stale-while-revalidate=86400",
+        "public, durable, s-maxage=3600, stale-while-revalidate=86400",
     },
   });
 }
