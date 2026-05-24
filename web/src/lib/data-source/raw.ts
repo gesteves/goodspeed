@@ -17,7 +17,7 @@ import { fileURLToPath } from "node:url";
  */
 
 const TTL_MS = 5 * 60 * 1000;
-const FETCH_TIMEOUT_MS = 10_000;
+const FETCH_TIMEOUT_MS = 3_500;
 
 interface CacheEntry {
   at: number;

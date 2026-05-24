@@ -2,7 +2,7 @@ import { env } from "@/lib/env";
 import { FieldFeedSchema, type FieldFeed } from "@/lib/schema";
 import { readRaw } from "./raw";
 
-export type FieldStatus = "ok" | "unconfigured" | "failed";
+export type FieldStatus = "ok" | "unconfigured" | "failed" | "loading";
 
 export interface FieldFeedResult {
   feed: FieldFeed | null;

@@ -147,8 +147,8 @@ describe("readRaw — http(s) cache + single-flight", () => {
     const pending = readRaw(URL_A);
     // Surface the rejection so an unhandled-rejection warning isn't logged.
     pending.catch(() => {});
-    // Advance past the 10s timeout.
-    await vi.advanceTimersByTimeAsync(10_500);
+    // Advance past the fetch timeout (see FETCH_TIMEOUT_MS in raw.ts).
+    await vi.advanceTimersByTimeAsync(4_000);
     await expect(pending).rejects.toThrow(/timed out/);
   });
 });

@@ -20,3 +20,16 @@ export async function getDashboardData(): Promise<DashboardData> {
     fieldStatus: fieldResult.status,
   };
 }
+
+/**
+ * SSR-fast variant: only awaits the point feed (small, fast, drives the
+ * always-visible NowPanel + charts). The map's gridded field feed is the
+ * larger, slower payload and the dashboard already degrades gracefully when
+ * it's missing, so we hand back `fieldStatus: "loading"` and let the island
+ * fetch the full payload from `/dashboard.json` right after hydration. The
+ * edge-cached HTML response is what makes this worthwhile.
+ */
+export async function getDashboardDataPointOnly(): Promise<DashboardData> {
+  const feed = await fetchFeed();
+  return { feed, field: null, fieldStatus: "loading" };
+}

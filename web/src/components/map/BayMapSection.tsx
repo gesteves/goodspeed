@@ -3,7 +3,7 @@ import { PUBLIC_MAPBOX_TOKEN } from "astro:env/client";
 import type { FieldStatus } from "@/lib/data-source";
 import type { FieldFeed } from "@/lib/schema";
 import styles from "./bayMap.module.css";
-import { computeGridExtent } from "./extent";
+import { VIEW_HEIGHT_MILES, VIEW_WIDTH_MILES, computeGridExtent } from "./extent";
 
 // Lazy import: keeps Mapbox GL (~hundreds of KB) out of the initial bundle,
 // and -- importantly -- never imports the module on the server (Mapbox GL
@@ -27,9 +27,15 @@ interface BayMapSectionProps {
  *    the map is temporarily down rather than wondering where a section went.
  *  - `fieldStatus === "unconfigured"` or no Mapbox token → render nothing.
  *    These are deploy-time choices, not a degraded production state.
+ *  - `fieldStatus === "loading"` → reserve the section's footprint with a
+ *    skeleton so the field can fill in after hydration without layout shift.
  *  - happy path → render the lazy `BayMap` with an aspect-ratio derived from
  *    the field grid's actual extent.
  */
+// The view aspect ratio is a constant of the camera, not of the data, so the
+// loading skeleton matches the eventual map exactly and avoids any CLS.
+const DEFAULT_ASPECT_RATIO = VIEW_WIDTH_MILES / VIEW_HEIGHT_MILES;
+
 export function BayMapSection({
   field,
   fieldStatus,
@@ -43,13 +49,25 @@ export function BayMapSection({
       </section>
     );
   }
-  if (!field) return null;
   if (!PUBLIC_MAPBOX_TOKEN) {
     if (typeof window !== "undefined") {
       console.warn("PUBLIC_MAPBOX_TOKEN is not set; the bay map is hidden.");
     }
     return null;
   }
+  if (fieldStatus === "loading") {
+    return (
+      <section
+        className={styles.section}
+        style={{ aspectRatio: DEFAULT_ASPECT_RATIO }}
+        aria-label="Bay current and temperature map"
+        aria-busy="true"
+      >
+        <div className={styles.skeleton} />
+      </section>
+    );
+  }
+  if (!field) return null;
   const { aspectRatio } = computeGridExtent(field.center);
   return (
     <section

@@ -81,6 +81,10 @@ export function Dashboard({ initialData, initialTheme, initialUnits }: Props) {
   }, []);
 
   useEffect(() => {
+    // SSR only awaits the point feed; fetch the full payload (including the
+    // gridded field feed) immediately so the map fills in as soon as possible
+    // after hydration, instead of waiting up to a full refresh interval.
+    void refresh();
     const id = window.setInterval(refresh, REFRESH_INTERVAL_MS);
     const onVisible = () => {
       if (document.visibilityState === "visible") void refresh();

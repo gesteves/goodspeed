@@ -1,10 +1,26 @@
 ---
 import Layout from "@/layouts/Layout.astro";
 import { Dashboard } from "@/components/Dashboard";
-import { getDashboardData } from "@/lib/data-source";
+import { getDashboardDataPointOnly } from "@/lib/data-source";
 
-const { feed, field, fieldStatus } = await getDashboardData();
+const { feed, field, fieldStatus } = await getDashboardDataPointOnly();
 const { theme, units } = Astro.locals;
+
+// Edge-cache the HTML at Netlify's CDN. Mirrors `/dashboard.json` so the page
+// and its polling endpoint stay in lockstep on freshness. The browser must
+// always revalidate (no stale local copy is OK); the edge serves the response
+// for up to 5 min with a 10-min stale-while-revalidate window so a slow or
+// momentarily unavailable origin doesn't show up as a slow first byte.
+// `Vary: Cookie` keeps the per-cookie variants (theme, units) correct.
+Astro.response.headers.set(
+  "Cache-Control",
+  "public, max-age=0, must-revalidate",
+);
+Astro.response.headers.set(
+  "Netlify-CDN-Cache-Control",
+  "public, s-maxage=300, stale-while-revalidate=600",
+);
+Astro.response.headers.set("Vary", "Cookie");
 ---
 
 <Layout initialTheme={theme}>
