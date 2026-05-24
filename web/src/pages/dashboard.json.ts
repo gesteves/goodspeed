@@ -1,11 +1,9 @@
 import type { APIRoute } from "astro";
 import { getDashboardData } from "@/lib/data-source";
 
-export const prerender = false;
-
 /**
- * SSR JSON endpoint used by the Dashboard island to refresh state every 60s
- * (replacing Next.js's `router.refresh()`).
+ * SSR JSON endpoint that the Dashboard island polls every 60s to refresh
+ * state without a page navigation.
  *
  * The path is `/dashboard.json` (NOT `/api/dashboard.json`) on purpose: the
  * `/api/event` rewrite in `netlify.toml` forwards anything under `/api/` to

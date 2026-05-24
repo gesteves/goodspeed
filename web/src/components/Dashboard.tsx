@@ -40,8 +40,8 @@ const CLOCK_TICK_MS = 30_000;
  *  - skips `setState` when the model cycle is unchanged, so the visx charts
  *    don't re-render on the common no-op refresh.
  *
- * This replaces Next.js's `router.refresh()` while preserving scrub state,
- * theme, units, and Mapbox state across refreshes.
+ * The whole interactive tree lives in one island so scrub state, theme,
+ * units, and the Mapbox instance survive each refresh.
  */
 export function Dashboard({ initialData, initialTheme, initialUnits }: Props) {
   const [data, setData] = useState<DashboardPayload>(initialData);

@@ -1,5 +1,3 @@
-"use client";
-
 import { ParentSize } from "@visx/responsive";
 import { useMemo, type KeyboardEvent } from "react";
 import { compass16 } from "@/lib/angles";

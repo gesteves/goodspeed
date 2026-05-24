@@ -28,11 +28,6 @@ export default defineConfig({
         access: "public",
         optional: true,
       }),
-      GOOGLE_API_KEY: envField.string({
-        context: "server",
-        access: "secret",
-        optional: true,
-      }),
     },
   },
 

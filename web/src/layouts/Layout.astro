@@ -38,9 +38,6 @@ const {
       content="#0b1117"
     />
     <link rel="icon" href="/favicon.ico" />
-  </head>
-  <body>
-    <slot />
 
     {/*
       Plausible analytics, proxied through Netlify (see netlify.toml). The
@@ -55,5 +52,8 @@ const {
       plausible.init({ endpoint: '/api/event' });
     </script>
     <script is:inline defer src="/js/pa-Ql_GCQ3RubH8FjaceAlmn.js"></script>
+  </head>
+  <body>
+    <slot />
   </body>
 </html>

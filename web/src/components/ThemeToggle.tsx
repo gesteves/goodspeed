@@ -1,5 +1,3 @@
-"use client";
-
 import type { Theme } from "@/lib/preferences";
 import { useTheme } from "./providers/ThemeProvider";
 import { Segmented } from "./Segmented";

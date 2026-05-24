@@ -1,5 +1,3 @@
-"use client";
-
 import { compass16 } from "@/lib/angles";
 import type { TideEvent } from "@/lib/derive/tides";
 import { formatClock, formatNumber } from "@/lib/format";

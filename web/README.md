@@ -29,7 +29,8 @@ Dev server runs at http://localhost:4321.
 
 ## Deploy
 
-Hosted on Netlify. `netlify.toml` is at the repo root; pushes to the linked
-branch trigger a build that runs `npm run check && npm run build`. The
+Hosted on Netlify. `netlify.toml` lives in this directory (`web/netlify.toml`)
+because the Netlify site is configured with `base = "web"`; pushes to the
+linked branch trigger a build that runs `npm run check && npm run build`. The
 `@astrojs/netlify` adapter writes the function bundle + `_redirects` into
 `.netlify/` automatically.

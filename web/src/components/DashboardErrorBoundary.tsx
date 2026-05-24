@@ -6,10 +6,10 @@ interface State {
 }
 
 /**
- * Catches runtime exceptions in the Dashboard island (chart rendering, map
- * init, etc.) and shows the same "Conditions unavailable" UI we used to render
- * from `app/error.tsx` in the Next.js app. The "Try again" button clears the
- * error state so the next refresh can replace the data.
+ * Catches runtime exceptions inside the Dashboard island (chart rendering,
+ * map init, etc.) and shows a "Conditions unavailable" fallback that matches
+ * the SSR 500 page. "Try again" clears the error state so the next refresh
+ * can replace the data.
  */
 export class DashboardErrorBoundary extends Component<
   { children: ReactNode },

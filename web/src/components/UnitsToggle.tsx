@@ -1,5 +1,3 @@
-"use client";
-
 import type { UnitSystem } from "@/lib/units/units";
 import { useUnits } from "./providers/UnitsProvider";
 import { Segmented } from "./Segmented";
