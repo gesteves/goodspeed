@@ -77,6 +77,14 @@ export function ArrowTimeline({
     setHoveredIndex(Math.max(0, Math.min(lastIndex, idx)));
   };
 
+  // Captures the pointer on touchdown so move events keep firing even if
+  // the finger drifts off the bar — without this, iOS Safari drops the
+  // scrub mid-drag.
+  const handleDown = (event: PointerEvent<SVGRectElement>) => {
+    event.currentTarget.setPointerCapture(event.pointerId);
+    handleMove(event);
+  };
+
   const hovered =
     hoveredIndex != null && hoveredIndex <= lastIndex ? hoveredIndex : null;
 
@@ -173,9 +181,8 @@ export function ArrowTimeline({
           width={innerWidth}
           height={bandHeight}
           fill="transparent"
-          style={{ touchAction: "pan-y" }}
+          onPointerDown={handleDown}
           onPointerMove={handleMove}
-          onPointerDown={handleMove}
           onPointerLeave={() => setHoveredIndex(null)}
           onPointerCancel={() => setHoveredIndex(null)}
         />

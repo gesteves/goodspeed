@@ -98,6 +98,14 @@ export function TimeSeriesChart({
     setHoveredIndex(Math.max(0, Math.min(data.length - 1, idx)));
   };
 
+  // Captures the pointer on touchdown so move events keep firing even if
+  // the finger drifts off the bar — without this, iOS Safari drops the
+  // scrub mid-drag.
+  const handleDown = (event: PointerEvent<SVGRectElement>) => {
+    event.currentTarget.setPointerCapture(event.pointerId);
+    handleMove(event);
+  };
+
   const hovered =
     hoveredIndex != null && hoveredIndex < data.length ? hoveredIndex : null;
 
@@ -203,16 +211,16 @@ export function TimeSeriesChart({
           tickLabelProps={{ ...tickLabelProps, textAnchor: "middle" }}
         />
 
-        {/* Pointer capture: pan-y keeps vertical page scroll working on touch */}
+        {/* Pointer capture overlay. touch-action: pan-y is set on the
+            parent <svg> in CSS so iOS honors it. */}
         <Bar
           x={m.left}
           y={m.top}
           width={innerWidth}
           height={innerHeight}
           fill="transparent"
-          style={{ touchAction: "pan-y" }}
+          onPointerDown={handleDown}
           onPointerMove={handleMove}
-          onPointerDown={handleMove}
           onPointerLeave={() => setHoveredIndex(null)}
           onPointerCancel={() => setHoveredIndex(null)}
         />

@@ -44,6 +44,10 @@
 
 .chart svg {
   display: block;
+  /* Lets the page scroll vertically but reserves horizontal touch motion
+     for chart scrubbing. Set here (HTML/SVG root) because iOS Safari
+     ignores touch-action on SVG child elements like <rect>. */
+  touch-action: pan-y;
 }
 
 .chartHead {
