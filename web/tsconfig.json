@@ -15,5 +15,5 @@
     ".astro/types.d.ts",
     "src/env.d.ts"
   ],
-  "exclude": ["node_modules", "dist", ".netlify"]
+  "exclude": ["node_modules", "dist", ".netlify", "netlify/edge-functions"]
 }
