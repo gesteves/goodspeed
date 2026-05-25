@@ -1,38 +1,19 @@
 ---
 import Layout from "@/layouts/Layout.astro";
 import { Dashboard } from "@/components/Dashboard";
-import { getDashboardDataPointOnly } from "@/lib/data-source";
 
-const { feed, field, fieldStatus } = await getDashboardDataPointOnly();
-const { theme, units } = Astro.locals;
-
-// Edge-cache the HTML at Netlify's CDN. Mirrors `/dashboard.json` so the page
-// and its polling endpoint stay in lockstep on freshness. The browser must
-// always revalidate (no stale local copy is OK); the edge serves the response
-// for up to 5 min with a 10-min stale-while-revalidate window so a slow or
-// momentarily unavailable origin doesn't show up as a slow first byte.
-// `Vary: Cookie` keeps the per-cookie variants (theme, units) correct.
-Astro.response.headers.set(
-  "Cache-Control",
-  "public, max-age=0, must-revalidate",
-);
-Astro.response.headers.set(
-  "Netlify-CDN-Cache-Control",
-  "public, s-maxage=300, stale-while-revalidate=600",
-);
-Astro.response.headers.set("Vary", "Cookie");
+// The HTML shell is fully static: the Dashboard island renders skeletons at
+// build time (via `client:load`) and fetches `/dashboard.json` on hydration.
+// Serving the shell from Netlify's CDN keeps TTFB independent of the SSR
+// function's cold start and the upstream feed fetch.
+export const prerender = true;
 ---
 
-<Layout initialTheme={theme}>
+<Layout>
   <div class="page">
     <a href="#main" class="skipLink">Skip to main content</a>
     <main id="main" class="main">
-      <Dashboard
-        client:load
-        initialData={{ feed, field, fieldStatus }}
-        initialTheme={theme}
-        initialUnits={units}
-      />
+      <Dashboard client:load />
       <footer class="footer">
         The data presented here is based on a hydrodynamic model provided by the National Oceanic and Atmospheric Administration’s San Francisco Bay Operational Forecast
         System. These are computed-generated forecasts, not measurements, and are presented here for informational purposes only. Use at your own&nbsp;risk.<br>

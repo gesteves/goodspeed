@@ -318,3 +318,22 @@ export function ForecastCharts(props: ForecastChartsProps) {
     </section>
   );
 }
+
+/**
+ * Pre-data placeholder for `ForecastCharts`. Reserves the chart stack's full
+ * height (4 charts + 2 arrow timelines) so data arrival doesn't cause CLS.
+ */
+export function ForecastChartsSkeleton() {
+  return (
+    <section
+      className={styles.section}
+      aria-label="48-hour forecast"
+      aria-busy="true"
+    >
+      <h2 className={styles.sectionTitle}>Forecast</h2>
+      <div className={styles.stack}>
+        <div className={styles.placeholder} />
+      </div>
+    </section>
+  );
+}

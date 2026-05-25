@@ -2,26 +2,26 @@
 import "@fontsource-variable/geist/index.css";
 import "@fontsource-variable/geist-mono/index.css";
 import "@/styles/globals.css";
-import type { Theme } from "@/lib/preferences";
 
 interface Props {
-  initialTheme: Theme;
   title?: string;
   description?: string;
 }
 
 const {
-  initialTheme,
   title = "Alcatraz Swim Conditions",
   description = "Modeled water temperature, currents, tide, and wind near Alcatraz Island, San Francisco Bay.",
 } = Astro.props;
+
+// Absolute URLs for share metadata. `Astro.site` is sourced from the
+// `site` config in `astro.config.mjs`, which reads `process.env.URL` at build
+// time so the value follows the Netlify deploy (production, branch, deploy
+// preview) automatically.
+const ogImage = new URL("/og.png", Astro.site).toString();
 ---
 
 <!doctype html>
-<html
-  lang="en"
-  data-theme={initialTheme === "system" ? undefined : initialTheme}
->
+<html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -30,10 +30,7 @@ const {
     <meta property="og:type" content="website" />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
-    <meta
-      property="og:image"
-      content={new URL("/og.png", Astro.url.origin).toString()}
-    />
+    <meta property="og:image" content={ogImage} />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     <meta
@@ -51,6 +48,39 @@ const {
       content="#0b1117"
     />
     <link rel="icon" href="/favicon.ico" />
+
+    {/*
+      Flash-free theme: read the `gs-theme` cookie and apply `data-theme`
+      synchronously before the browser paints. Pages are prerendered, so
+      middleware can't do this on the server -- this inline script is the
+      single source of truth for the initial theme attribute.
+    */}
+    <script is:inline>
+      (function () {
+        try {
+          const match = document.cookie.match(/(?:^|;\s*)gs-theme=([^;]+)/);
+          if (!match) return;
+          const value = decodeURIComponent(match[1]);
+          if (value === "light" || value === "dark") {
+            document.documentElement.setAttribute("data-theme", value);
+          }
+        } catch {
+          /* ignore: theme stays at the CSS default */
+        }
+      })();
+    </script>
+
+    {/*
+      Preload the dashboard JSON so the browser begins the request before the
+      JS bundle has parsed. The Dashboard island's `useEffect` will pick up
+      the in-flight response.
+    */}
+    <link
+      rel="preload"
+      href="/dashboard.json"
+      as="fetch"
+      crossorigin="anonymous"
+    />
 
     {/*
       Plausible analytics, proxied through Netlify (see netlify.toml). The

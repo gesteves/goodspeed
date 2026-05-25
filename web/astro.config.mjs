@@ -6,6 +6,12 @@ import react from "@astrojs/react";
 
 // https://astro.build/config
 export default defineConfig({
+  // `site` is read by `Astro.site`, used by the layout to build the absolute
+  // og:image URL in prerendered HTML. Netlify exposes the deploy's primary
+  // URL as `URL` at build time, so production, branch deploys, and deploy
+  // previews each get the right origin without hardcoding. Falls back to the
+  // dev server origin for local `astro build` / `astro dev`.
+  site: process.env.URL ?? "http://localhost:4321",
   output: "server",
   adapter: netlify(),
   integrations: [react()],

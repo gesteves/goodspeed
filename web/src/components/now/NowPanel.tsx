@@ -22,6 +22,59 @@ export interface NowPanelProps {
   nextTide: TideEvent | null;
 }
 
+const SKELETON_CARDS: { label: string; accent: string; hasSub: boolean }[] = [
+  { label: "Water temperature", accent: "var(--chart-temp)", hasSub: false },
+  { label: "Current", accent: "var(--chart-current)", hasSub: true },
+  { label: "Tide", accent: "var(--chart-tide)", hasSub: true },
+  { label: "Wind", accent: "var(--chart-wind)", hasSub: true },
+];
+
+/**
+ * Pre-data placeholder for `NowPanel`. Renders the same 4-card grid with
+ * shimmering value blocks so the panel's height matches the real component
+ * and there's no layout shift when data arrives.
+ */
+export function NowPanelSkeleton() {
+  return (
+    <section className={styles.panel} aria-label="Current conditions" aria-busy="true">
+      <div className={styles.panelHead}>
+        <h2 className={styles.panelTitle}>Right now</h2>
+      </div>
+
+      <div className={styles.grid}>
+        {SKELETON_CARDS.map(({ label, accent, hasSub }) => (
+          <div key={label} className={styles.card}>
+            <div className={styles.cardHead}>
+              <span
+                className={styles.swatch}
+                style={{ background: accent }}
+                aria-hidden="true"
+              />
+              <h3 className={styles.cardLabel}>{label}</h3>
+            </div>
+            <div className={styles.value}>
+              <span
+                className={`${styles.skeletonBlock} ${styles.skeletonNumber}`}
+                aria-hidden="true"
+              />
+              <span
+                className={`${styles.skeletonBlock} ${styles.skeletonUnit}`}
+                aria-hidden="true"
+              />
+            </div>
+            {hasSub && (
+              <span
+                className={`${styles.skeletonBlock} ${styles.skeletonSub}`}
+                aria-hidden="true"
+              />
+            )}
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 export function NowPanel({ now, point, trend, nextTide }: NowPanelProps) {
   const { units } = useUnits();
 

@@ -91,3 +91,42 @@
   font-size: 0.85rem;
 }
 
+/* ---- Skeleton placeholders (pre-data render) ---- */
+.skeletonBlock {
+  background: var(--surface-2);
+  border-radius: var(--radius-sm);
+  animation: skeletonPulse 1.4s ease-in-out infinite;
+}
+
+.skeletonNumber {
+  width: 70%;
+  height: 2.3rem;
+}
+
+.skeletonUnit {
+  width: 2.2rem;
+  height: 1rem;
+}
+
+.skeletonSub {
+  width: 60%;
+  height: 0.85rem;
+  margin-top: 2px;
+}
+
+@keyframes skeletonPulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeletonBlock {
+    animation: none;
+  }
+}
+

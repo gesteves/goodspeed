@@ -22,3 +22,25 @@ export function isTheme(value: unknown): value is Theme {
 export function writePref(name: string, value: string): void {
   document.cookie = `${name}=${value}; path=/; max-age=${PREF_MAX_AGE}; samesite=lax`;
 }
+
+/**
+ * Read a preference cookie from the client. Returns `fallback` if the cookie
+ * is missing, malformed, or fails `validate`. Safe to call during SSR or build
+ * (returns `fallback` when `document` is unavailable).
+ */
+export function readPref<T extends string>(
+  name: string,
+  validate: (value: unknown) => value is T,
+  fallback: T,
+): T {
+  if (typeof document === "undefined") return fallback;
+  const prefix = `${name}=`;
+  for (const part of document.cookie.split(";")) {
+    const trimmed = part.trim();
+    if (trimmed.startsWith(prefix)) {
+      const value = decodeURIComponent(trimmed.slice(prefix.length));
+      return validate(value) ? value : fallback;
+    }
+  }
+  return fallback;
+}

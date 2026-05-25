@@ -68,3 +68,41 @@ export function Header({
     </header>
   );
 }
+
+/**
+ * Pre-data placeholder. Matches `Header`'s layout so the chrome (title,
+ * toggles, status pill) is visible immediately on first paint with the same
+ * dimensions as the real header.
+ */
+export function HeaderSkeleton() {
+  return (
+    <header className={styles.header}>
+      <div className={styles.titleRow}>
+        <div className={styles.titleBlock}>
+          <p className={styles.subtitle}>
+            <span>Modeled conditions</span>
+            <span aria-hidden="true"> · </span>
+            <a
+              className={styles.subtitleLink}
+              href={STATION_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              SW of Alcatraz Island
+            </a>
+          </p>
+          <h1 className={styles.title}>Alcatraz Swim Conditions</h1>
+        </div>
+        <div className={styles.controls}>
+          <UnitsToggle />
+          <ThemeToggle />
+        </div>
+      </div>
+
+      <div className={styles.status} aria-live="polite">
+        <span className={styles.dot} aria-hidden="true" />
+        <span className={styles.statusText}>Loading conditions…</span>
+      </div>
+    </header>
+  );
+}
