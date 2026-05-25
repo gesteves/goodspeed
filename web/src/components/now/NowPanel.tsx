@@ -22,8 +22,18 @@ export interface NowPanelProps {
   nextTide: TideEvent | null;
 }
 
-const SKELETON_CARDS: { label: string; accent: string; hasSub: boolean }[] = [
-  { label: "Water temperature", accent: "var(--chart-temp)", hasSub: false },
+const SKELETON_CARDS: {
+  label: string;
+  shortLabel?: string;
+  accent: string;
+  hasSub: boolean;
+}[] = [
+  {
+    label: "Water temperature",
+    shortLabel: "Water temp",
+    accent: "var(--chart-temp)",
+    hasSub: false,
+  },
   { label: "Current", accent: "var(--chart-current)", hasSub: true },
   { label: "Tide", accent: "var(--chart-tide)", hasSub: true },
   { label: "Wind", accent: "var(--chart-wind)", hasSub: true },
@@ -42,7 +52,7 @@ export function NowPanelSkeleton() {
       </div>
 
       <div className={styles.grid}>
-        {SKELETON_CARDS.map(({ label, accent, hasSub }) => (
+        {SKELETON_CARDS.map(({ label, shortLabel, accent, hasSub }) => (
           <div key={label} className={styles.card}>
             <div className={styles.cardHead}>
               <span
@@ -50,7 +60,16 @@ export function NowPanelSkeleton() {
                 style={{ background: accent }}
                 aria-hidden="true"
               />
-              <h3 className={styles.cardLabel}>{label}</h3>
+              <h3 className={styles.cardLabel}>
+                {shortLabel ? (
+                  <>
+                    <span className={styles.labelFull}>{label}</span>
+                    <span className={styles.labelShort}>{shortLabel}</span>
+                  </>
+                ) : (
+                  label
+                )}
+              </h3>
             </div>
             <div className={styles.value}>
               <span
@@ -96,6 +115,7 @@ export function NowPanel({ now, point, trend, nextTide }: NowPanelProps) {
       <div className={styles.grid}>
         <ReadingCard
           label="Water temperature"
+          shortLabel="Water temp"
           accent="var(--chart-temp)"
           value={formatNumber(temp, 1)}
           unit={unitField(METRICS.waterTemp, units).unit}

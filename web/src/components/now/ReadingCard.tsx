@@ -4,12 +4,15 @@ import styles from "./now.module.css";
 /** A single current-conditions stat: label, big value, optional sub-line. */
 export function ReadingCard({
   label,
+  shortLabel,
   value,
   unit,
   sub,
   accent,
 }: {
   label: string;
+  /** Shorter label shown when the card is narrow (container <220px). */
+  shortLabel?: string;
   value: string;
   unit: string;
   sub?: ReactNode;
@@ -26,7 +29,16 @@ export function ReadingCard({
             aria-hidden="true"
           />
         )}
-        <h3 className={styles.cardLabel}>{label}</h3>
+        <h3 className={styles.cardLabel}>
+          {shortLabel ? (
+            <>
+              <span className={styles.labelFull}>{label}</span>
+              <span className={styles.labelShort}>{shortLabel}</span>
+            </>
+          ) : (
+            label
+          )}
+        </h3>
       </div>
       <div className={styles.value}>
         <span className={`${styles.number} tnum`}>{value}</span>
