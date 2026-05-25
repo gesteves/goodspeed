@@ -218,22 +218,39 @@ def _publish_field_feed(
     )
 
 
+SCHEDULER_CRON = "0,30 5,11,17,23 * * * UTC"
+
+
+def _build_fetch_trigger():
+    """Trigger for the scheduled fetch: two fires per cycle, 8/day total.
+
+    NOAA publishes SFBOFS four times a day (cycles at 03/09/15/21 UTC) with the
+    last regulargrid file landing ~HH+1:23 after each cycle. We fire ~2 h after
+    each cycle so all files are available, and again 30 min later as cheap
+    insurance against a late publish (the second fire is a no-op skip when the
+    first succeeded).
+    """
+    from apscheduler.triggers.cron import CronTrigger
+
+    return CronTrigger(hour="5,11,17,23", minute="0,30", timezone="UTC")
+
+
 def serve(out_dir: Path | None = None) -> int:
-    """Long-running process: hourly scheduler + Starlette HTTP server.
+    """Long-running process: SFBOFS-cycle scheduler + Starlette HTTP server.
 
     The scheduler runs in a background thread (APScheduler ``BackgroundScheduler``);
     uvicorn owns the main asyncio loop. Both touch the same on-disk JSON files
     via :mod:`goodspeed.storage`; reads are concurrent-safe because writes are
     atomic (tmp file + rename).
 
-    NOAA only publishes the SFBOFS model four times a day, but the exact
-    publish times aren't guaranteed. Polling hourly keeps the feed fresh
-    regardless of when a new cycle lands; ``run_once`` is idempotent — when the
-    latest cycle hasn't changed it just exits.
+    NOAA publishes SFBOFS on a tight cadence keyed to the 4 daily cycles
+    (03/09/15/21 UTC), with the final files landing ~1 h 25 min after the
+    cycle hour. We fire twice per cycle (8x/day) at the times in
+    :data:`SCHEDULER_CRON`; ``run_once`` is idempotent so the second fire
+    cheaply skips when the first already published the cycle.
     """
     import uvicorn
     from apscheduler.schedulers.background import BackgroundScheduler
-    from apscheduler.triggers.cron import CronTrigger
 
     resolved = out_dir if out_dir is not None else web.out_dir()
     resolved.mkdir(parents=True, exist_ok=True)
@@ -249,17 +266,16 @@ def serve(out_dir: Path | None = None) -> int:
     ).start()
 
     scheduler = BackgroundScheduler(timezone="UTC")
-    trigger = CronTrigger(minute=0, timezone="UTC")
     scheduler.add_job(
         lambda: _safe_run(resolved),
-        trigger=trigger,
+        trigger=_build_fetch_trigger(),
         id="goodspeed-fetch",
         max_instances=1,
         coalesce=True,
         misfire_grace_time=60 * 30,
     )
     scheduler.start()
-    log.info("scheduler.started", extra={"cron": "0 * * * * UTC"})
+    log.info("scheduler.started", extra={"cron": SCHEDULER_CRON})
 
     try:
         uvicorn.run(web.app, host="0.0.0.0", port=8080, log_config=None)

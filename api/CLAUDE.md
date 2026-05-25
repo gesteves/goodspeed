@@ -51,15 +51,21 @@ uv run python -m goodspeed.main serve --out-dir ../output # scheduler + HTTP ser
 `serve` is the Fly Machine entrypoint (`fly.toml`, app `goodspeed-api`). One
 process runs two things:
 
-1. An APScheduler `BackgroundScheduler` fires `run_once` hourly on the hour
-   UTC (daemon thread). A warm-up `run_once` is also kicked off in a thread at
-   startup so a freshly deployed machine populates the volume immediately.
+1. An APScheduler `BackgroundScheduler` fires `run_once` 8 times per day —
+   twice per NOAA cycle, at `0,30 5,11,17,23` UTC (see
+   `main.SCHEDULER_CRON`). A warm-up `run_once` is also kicked off in a thread
+   at startup so a freshly deployed machine populates the volume immediately.
 2. Uvicorn serves the Starlette app from `web.py` on :8080 in the main thread.
 
-Hourly polling is intentional: NOAA's 4 daily cycles don't land at exact times.
-Each run first compares the latest ready cycle to the cycle in the published
-`latest.json`; if they match it logs `run.skipped` and exits **without**
-downloading the large NetCDF files. So ~20 runs/day are cheap no-ops.
+The fire times are aligned to NOAA's actual publish schedule. SFBOFS cycles
+run at 03/09/15/21 UTC and the last regulargrid file lands ~HH+1:23 after
+each cycle, so the first fire of each pair (e.g. 05:00 for the 03Z cycle)
+runs ~37 min after the cycle is fully published. The second fire 30 min later
+is cheap insurance against a late publish: `run_once` is idempotent — it
+compares the latest ready cycle to the cycle in the published `latest.json`
+and exits with `run.skipped` when they match, without downloading the
+NetCDF files. On a normal day expect 4 `run.complete` + 4 `run.skipped` per
+day.
 
 `_safe_run` wraps `run_once` and, on a non-zero rc (`scheduled_run.failed`) or
 an exception (`scheduled_run.exception`), posts a Slack alert via `notify.py`.

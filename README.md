@@ -8,7 +8,7 @@ A live dashboard showing forecast conditions in San Francisco Bay at station [SF
 
 Goodspeed consists of two separate apps:
 
-- **`api/`** — A Python backend application that polls NOAA's THREDDS server hourly, extracts surface-layer
+- **`api/`** — A Python backend application that polls NOAA's THREDDS server, extracts surface-layer
   conditions for SFB1204, and serves the resulting JSON feed over HTTP.
 - **`web/`** — A single-page SSR Astro front-end application that renders the feed's data as a dashboard.
 

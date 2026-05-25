@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import date
+from datetime import UTC, date, datetime, timedelta
 
 from goodspeed import catalog, fetcher, main
 
@@ -88,3 +88,33 @@ def test_run_once_closes_nowcast_when_forecast_missing(tmp_path, monkeypatch):
     assert all(ds.closed for ds in opened), (
         "every successfully-opened nowcast Dataset must be closed before the next fallback"
     )
+
+
+def test_fetch_trigger_fires_twice_per_cycle():
+    """Scheduler fires 8x/day: two fires per NOAA cycle (03/09/15/21 UTC).
+
+    Each cycle's pair lands ~2 h after the cycle (when all files are published)
+    + 30 min later as a cheap backup. Verifying the exact (hour, minute) set
+    over a 24-h window catches both an accidental hourly regression and any
+    off-by-one in the cron expression.
+    """
+    expected = [
+        (5, 0), (5, 30),
+        (11, 0), (11, 30),
+        (17, 0), (17, 30),
+        (23, 0), (23, 30),
+    ]
+    trigger = main._build_fetch_trigger()
+    start = datetime(2026, 5, 22, 0, 0, tzinfo=UTC)
+    end = start + timedelta(days=1)
+
+    fires: list[tuple[int, int]] = []
+    prev = start - timedelta(seconds=1)
+    while True:
+        nxt = trigger.get_next_fire_time(prev, prev + timedelta(seconds=1))
+        if nxt is None or nxt >= end:
+            break
+        fires.append((nxt.hour, nxt.minute))
+        prev = nxt
+
+    assert fires == expected
