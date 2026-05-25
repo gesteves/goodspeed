@@ -34,6 +34,11 @@ export default defineConfig({
         access: "public",
         optional: true,
       }),
+      PUBLIC_PLAUSIBLE_SCRIPT_ID: envField.string({
+        context: "client",
+        access: "public",
+        optional: true,
+      }),
     },
   },
 

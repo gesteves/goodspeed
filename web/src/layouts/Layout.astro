@@ -2,6 +2,7 @@
 import "@fontsource-variable/geist/index.css";
 import "@fontsource-variable/geist-mono/index.css";
 import "@/styles/globals.css";
+import { PUBLIC_PLAUSIBLE_SCRIPT_ID } from "astro:env/client";
 
 interface Props {
   title?: string;
@@ -88,13 +89,19 @@ const ogImage = new URL("/og.png", Astro.site).toString();
       don't drop them, while data still lands at plausible.io.
       The inline queueing shim sets up plausible() before the real script
       arrives, so call order is safe regardless of load timing.
+      Both tags are skipped when PUBLIC_PLAUSIBLE_SCRIPT_ID is unset so local
+      dev / preview builds don't 404 on a missing script.
     */}
-    <script is:inline>
-      window.plausible = window.plausible || function () { (plausible.q = plausible.q || []).push(arguments) };
-      plausible.init = plausible.init || function (i) { plausible.o = i || {} };
-      plausible.init({ endpoint: '/api/event' });
-    </script>
-    <script is:inline defer src="/js/pa-Ql_GCQ3RubH8FjaceAlmn.js"></script>
+    {PUBLIC_PLAUSIBLE_SCRIPT_ID && (
+      <>
+        <script is:inline>
+          window.plausible = window.plausible || function () { (plausible.q = plausible.q || []).push(arguments) };
+          plausible.init = plausible.init || function (i) { plausible.o = i || {} };
+          plausible.init({ endpoint: '/api/event' });
+        </script>
+        <script is:inline defer src={`/js/${PUBLIC_PLAUSIBLE_SCRIPT_ID}.js`}></script>
+      </>
+    )}
   </head>
   <body>
     <slot />

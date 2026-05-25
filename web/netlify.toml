@@ -29,9 +29,11 @@
 # still goes to plausible.io. Both rewrites use status 200 (proxy, not a 301).
 # `force = true` on /api/event wins over the Astro adapter's catch-all
 # function route so events still post through to plausible.io.
+# The /js/* wildcard lets PUBLIC_PLAUSIBLE_SCRIPT_ID change without touching
+# this file. Astro emits bundled JS under /_astro/, so there's no collision.
 [[redirects]]
-  from = "/js/pa-Ql_GCQ3RubH8FjaceAlmn.js"
-  to = "https://plausible.io/js/pa-Ql_GCQ3RubH8FjaceAlmn.js"
+  from = "/js/*"
+  to = "https://plausible.io/js/:splat"
   status = 200
 
 [[redirects]]
