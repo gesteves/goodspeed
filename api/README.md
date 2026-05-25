@@ -36,14 +36,6 @@ uv run ruff check --fix src tests   # autofix
 See [`tests/fixtures/README.md`](tests/fixtures/README.md) for fixture refresh
 instructions.
 
-## Env vars
-
-- `GOODSPEED_OUT_DIR` — directory `serve` reads/writes. Defaults to `/data`
-  (the Fly Volume mount in production). `run` takes `--out-dir` explicitly.
-- `SLACK_WEBHOOK_URL` — optional. When set, failed scheduled runs post an
-  alert. Unset locally and in tests (silent no-op).
-- `GOODSPEED_SCHEMA_PATH` — overrides schema lookup (set in the Docker image).
-
 ## Deploy
 
 GitHub Actions (`.github/workflows/ci.yml`): lint → test → deploy to Fly on
