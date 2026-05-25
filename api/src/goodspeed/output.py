@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import logging
+import math
 import os
 from datetime import UTC, datetime
 from pathlib import Path
@@ -59,7 +60,20 @@ def _resolve_schema_path(filename: str = POINT_SCHEMA_FILENAME) -> Path:
     )
 
 
-_SCHEMA_PATH = None  # lazy-loaded
+# Schemas are static; parse once per filename and reuse the validator.
+_VALIDATOR_CACHE: dict[str, Draft202012Validator] = {}
+
+
+def _validator_for(filename: str) -> Draft202012Validator:
+    cached = _VALIDATOR_CACHE.get(filename)
+    if cached is not None:
+        return cached
+    path = _resolve_schema_path(filename)
+    with path.open("r", encoding="utf-8") as fh:
+        schema = json.load(fh)
+    validator = Draft202012Validator(schema)
+    _VALIDATOR_CACHE[filename] = validator
+    return validator
 
 STATION_NAME = "SW of Alcatraz Island"
 MODEL_VERSION = "FVCOM_4.4.7"
@@ -102,18 +116,47 @@ def m_to_ft(m: float | np.ndarray) -> float | np.ndarray:
 
 
 def _round(x: float, n: int) -> float:
-    """Round to ``n`` digits, returning a plain float (no numpy scalars)."""
-    if x is None or (isinstance(x, float) and (np.isnan(x) or np.isinf(x))):
+    """Round to ``n`` digits, returning a plain float (no numpy scalars).
+
+    The previous gate only ran the NaN/Inf check when ``x`` was a Python
+    ``float``; numpy scalars (``np.float32``/``np.float64``) and other numeric
+    types would slip through and a non-finite value could land in the
+    published JSON. Coerce first so the check is uniform.
+    """
+    if x is None:
+        raise ValueError("Non-finite value in output: None")
+    xf = float(x)
+    if math.isnan(xf) or math.isinf(xf):
         raise ValueError(f"Non-finite value in output: {x!r}")
-    return float(round(float(x), n))
+    return round(xf, n)
+
+
+def _derive_current_fields(
+    temp_c: np.ndarray | float,
+    u_ms: np.ndarray | float,
+    v_ms: np.ndarray | float,
+) -> dict[str, Any]:
+    """Compute the temp + current derived fields shared by both feeds.
+
+    Returns plain Python floats (single values) or numpy arrays when the
+    inputs are arrays; the caller picks/rounds for the target schema.
+    """
+    speed_ms = current_speed_ms(u_ms, v_ms)
+    bearing = current_bearing_deg(u_ms, v_ms)
+    return {
+        "water_temp_c": temp_c,
+        "water_temp_f": c_to_f(temp_c),
+        "current_speed_ms": speed_ms,
+        "current_speed_kt": ms_to_kt(speed_ms),
+        "current_bearing_deg": bearing,
+    }
 
 
 def _series_to_points(series: StationSeries, source: str) -> list[dict[str, Any]]:
     u, v = series.u_ms, series.v_ms
     uw, vw = series.uwind_ms, series.vwind_ms
-    cs = current_speed_ms(u, v)
-    cb = current_bearing_deg(u, v)
-    ws = current_speed_ms(uw, vw)  # same formula
+    derived = _derive_current_fields(series.temp_c, u, v)
+    ws = current_speed_ms(uw, vw)  # same formula as current_speed_ms
     wb = wind_bearing_deg(uw, vw)
 
     points: list[dict[str, Any]] = []
@@ -124,13 +167,13 @@ def _series_to_points(series: StationSeries, source: str) -> list[dict[str, Any]
             {
                 "t": ts.strftime("%Y-%m-%dT%H:%M:%SZ"),
                 "source": source,
-                "water_temp_c": _round(series.temp_c[i], 3),
-                "water_temp_f": _round(c_to_f(series.temp_c[i]), 2),
+                "water_temp_c": _round(derived["water_temp_c"][i], 3),
+                "water_temp_f": _round(derived["water_temp_f"][i], 2),
                 "current_u_ms": _round(u[i], 4),
                 "current_v_ms": _round(v[i], 4),
-                "current_speed_ms": _round(cs[i], 4),
-                "current_speed_kt": _round(ms_to_kt(cs[i]), 3),
-                "current_bearing_deg": _round(cb[i], 2),
+                "current_speed_ms": _round(derived["current_speed_ms"][i], 4),
+                "current_speed_kt": _round(derived["current_speed_kt"][i], 3),
+                "current_bearing_deg": _round(derived["current_bearing_deg"][i], 2),
                 "water_level_m": _round(series.zeta_m[i], 4),
                 "water_level_ft": _round(m_to_ft(series.zeta_m[i]), 3),
                 "salinity_psu": _round(series.salinity_psu[i], 3),
@@ -216,10 +259,7 @@ def sanity_check(feed: dict[str, Any]) -> list[str]:
 
 def validate_against_schema(feed: dict[str, Any]) -> None:
     """Raise ``jsonschema.ValidationError`` if ``feed`` does not match the schema."""
-    path = _resolve_schema_path(POINT_SCHEMA_FILENAME)
-    with path.open("r", encoding="utf-8") as fh:
-        schema = json.load(fh)
-    Draft202012Validator(schema).validate(feed)
+    _validator_for(POINT_SCHEMA_FILENAME).validate(feed)
 
 
 def serialize(feed: dict[str, Any]) -> bytes:
@@ -260,14 +300,13 @@ def build_field_feed(
     center_lat, center_lon = center
 
     def _frame(temp_c: np.ndarray, u: np.ndarray, v: np.ndarray) -> dict[str, Any]:
-        speed_ms = current_speed_ms(u, v)
-        bearing = current_bearing_deg(u, v)
+        d = _derive_current_fields(temp_c, u, v)
         return {
-            "current_speed_ms": [_round(float(x), 3) for x in speed_ms],
-            "current_speed_kt": [_round(float(ms_to_kt(x)), 3) for x in speed_ms],
-            "current_bearing_deg": [_round(float(x), 1) for x in bearing],
-            "water_temp_c": [_round(float(x), 3) for x in temp_c],
-            "water_temp_f": [_round(float(c_to_f(x)), 2) for x in temp_c],
+            "current_speed_ms": [_round(float(x), 3) for x in d["current_speed_ms"]],
+            "current_speed_kt": [_round(float(x), 3) for x in d["current_speed_kt"]],
+            "current_bearing_deg": [_round(float(x), 1) for x in d["current_bearing_deg"]],
+            "water_temp_c": [_round(float(x), 3) for x in d["water_temp_c"]],
+            "water_temp_f": [_round(float(x), 2) for x in d["water_temp_f"]],
         }
 
     def _iter(grid: FieldGrid, source: str) -> list[tuple[str, str, dict[str, Any]]]:
@@ -317,10 +356,7 @@ def build_field_feed(
 
 
 def validate_field_against_schema(feed: dict[str, Any]) -> None:
-    path = _resolve_schema_path(FIELD_SCHEMA_FILENAME)
-    with path.open("r", encoding="utf-8") as fh:
-        schema = json.load(fh)
-    Draft202012Validator(schema).validate(feed)
+    _validator_for(FIELD_SCHEMA_FILENAME).validate(feed)
 
 
 def sanity_check_field(feed: dict[str, Any]) -> list[str]:

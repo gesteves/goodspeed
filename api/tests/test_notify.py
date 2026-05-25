@@ -18,7 +18,7 @@ def test_slack_failure_noop_without_webhook(monkeypatch):
 
 def test_slack_failure_posts_when_webhook_set(monkeypatch):
     """With the webhook set, a danger-coloured payload is POSTed to it."""
-    monkeypatch.setenv("SLACK_WEBHOOK_URL", "https://hooks.slack.test/abc")
+    monkeypatch.setenv("SLACK_WEBHOOK_URL", "https://hooks.slack.com/services/T0/B0/abc")
     calls: list[dict] = []
 
     class _Resp:
@@ -33,7 +33,8 @@ def test_slack_failure_posts_when_webhook_set(monkeypatch):
     notify.slack_failure("scheduled_run.exception", {"error": "RuntimeError: boom"})
 
     assert len(calls) == 1
-    assert calls[0]["url"] == "https://hooks.slack.test/abc"
+    assert calls[0]["url"] == "https://hooks.slack.com/services/T0/B0/abc"
+
     payload = calls[0]["json"]
     assert "scheduled_run.exception" in payload["text"]
     assert payload["attachments"][0]["color"] == "danger"
@@ -42,7 +43,7 @@ def test_slack_failure_posts_when_webhook_set(monkeypatch):
 
 def test_slack_failure_swallows_post_errors(monkeypatch):
     """A failing POST is logged, never raised — alerting can't break the run."""
-    monkeypatch.setenv("SLACK_WEBHOOK_URL", "https://hooks.slack.test/abc")
+    monkeypatch.setenv("SLACK_WEBHOOK_URL", "https://hooks.slack.com/services/T0/B0/abc")
 
     def _post(*a, **k):
         raise ConnectionError("network down")
@@ -86,7 +87,7 @@ def test_safe_run_silent_on_success(monkeypatch):
 
 def test_slack_download_fallback_posts_once_per_process(monkeypatch):
     """A first download-fallback notifies; subsequent ones in the same process are silent."""
-    monkeypatch.setenv("SLACK_WEBHOOK_URL", "https://hooks.slack.test/abc")
+    monkeypatch.setenv("SLACK_WEBHOOK_URL", "https://hooks.slack.com/services/T0/B0/abc")
     monkeypatch.setattr(notify, "_download_fallback_notified", False)
     calls: list[dict] = []
 

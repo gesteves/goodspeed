@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import logging
 import os
+import threading
+from urllib.parse import urlparse
 
 import requests
 
@@ -14,8 +16,29 @@ POST_TIMEOUT_S = 10
 
 # One-shot guard for the OPeNDAP→download-fallback notification: alert once per
 # process so a sustained NOAA OPeNDAP outage doesn't fire on every cycle. A
-# process restart (Fly deploy / machine bounce) resets this.
+# process restart (Fly deploy / machine bounce) resets this. The lock protects
+# the test-and-set: APScheduler's worker and the warm-up thread can race here.
 _download_fallback_notified = False
+_download_fallback_lock = threading.Lock()
+
+
+def _resolve_webhook() -> str | None:
+    """Return the configured Slack webhook URL, or None if unset/invalid.
+
+    Refuses anything that isn't ``https://hooks.slack.com/...`` so a misset
+    secret (typo, malicious value) can't redirect alerts off-platform.
+    """
+    raw = os.environ.get(WEBHOOK_ENV)
+    if not raw:
+        return None
+    parsed = urlparse(raw)
+    if parsed.scheme != "https" or parsed.netloc != "hooks.slack.com":
+        log.warning(
+            "notify.webhook_invalid",
+            extra={"scheme": parsed.scheme, "host": parsed.netloc},
+        )
+        return None
+    return raw
 
 
 def slack_failure(event: str, detail: dict[str, object]) -> None:
@@ -28,7 +51,7 @@ def slack_failure(event: str, detail: dict[str, object]) -> None:
     Alerting must never turn a recoverable run failure into a crash, so this
     function never raises.
     """
-    webhook = os.environ.get(WEBHOOK_ENV)
+    webhook = _resolve_webhook()
     if not webhook:
         return
 
@@ -64,11 +87,12 @@ def slack_download_fallback(detail: dict[str, object]) -> None:
     Like :func:`slack_failure`, missing webhook / network errors are silent.
     """
     global _download_fallback_notified
-    if _download_fallback_notified:
-        return
-    _download_fallback_notified = True
+    with _download_fallback_lock:
+        if _download_fallback_notified:
+            return
+        _download_fallback_notified = True
 
-    webhook = os.environ.get(WEBHOOK_ENV)
+    webhook = _resolve_webhook()
     if not webhook:
         return
 

@@ -195,6 +195,9 @@ def load_field_grid(
     ``MAX_FAILED_FRACTION`` of the requested hours fail, raises ``ValueError``
     so the caller can fall back / surface the issue.
     """
+    if not hours:
+        raise ValueError(f"load_field_grid called with empty hours for phase={phase!r}")
+
     times: list[datetime] = []
     temp_rows: list[np.ndarray] = []
     u_rows: list[np.ndarray] = []
@@ -289,7 +292,14 @@ def load_field_grid(
         },
     )
 
-    assert shared_lat is not None and shared_lon is not None
+    if shared_lat is None or shared_lon is None:
+        # Unreachable in practice -- the `if not times` guard above already
+        # short-circuits when we never populated the loop body. Explicit check
+        # so this can't silently break under `python -O` (which drops asserts).
+        raise RuntimeError(
+            f"Grid arrays were not populated for phase={phase!r} despite "
+            f"{len(times)} loaded frames"
+        )
     return FieldGrid(
         times=np.array(times, dtype=object),
         lat=shared_lat,

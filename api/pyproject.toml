@@ -2,7 +2,7 @@
 name = "goodspeed"
 version = "0.1.0"
 description = "Goodspeed — SFBOFS SFB1204 station data fetcher + publisher for the Alcatraz crossing"
-requires-python = ">=3.12,<3.13"
+requires-python = ">=3.12,<3.15"
 readme = "README.md"
 dependencies = [
     # xarray uses CalVer (YYYY.MM). Allow any 2024.10–2025.x; bump deliberately

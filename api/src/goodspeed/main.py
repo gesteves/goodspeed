@@ -10,6 +10,8 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+import numpy as np
+
 from . import (
     catalog,
     extract,
@@ -52,41 +54,66 @@ def run_once(
             )
             return 0
 
+    fetched = _fetch_with_fallback(cycle, max_cycle_fallbacks)
+    if fetched is None:
+        return 2
+    nc_ds, nc_meta, fc_ds, fc_meta, resolved_cycle = fetched
+    return _build_and_publish(
+        resolved_cycle, fetched_at, nc_ds, nc_meta, fc_ds, fc_meta, out_dir
+    )
+
+
+def _fetch_with_fallback(
+    starting_cycle: catalog.Cycle, max_attempts: int
+) -> tuple[
+    xr.Dataset,
+    fetcher.FetchMeta,
+    xr.Dataset,
+    fetcher.FetchMeta,
+    catalog.Cycle,
+] | None:
+    """Open the nowcast + forecast files for ``starting_cycle``, walking back to
+    earlier cycles on ``FileNotAvailable``. Returns ``None`` when all attempts
+    are exhausted (caller treats as rc=2). Releases any half-opened datasets
+    before retrying so a tempfile from a partial download is not leaked.
+    """
+    cycle = starting_cycle
     nc_ds: xr.Dataset | None = None
     fc_ds: xr.Dataset | None = None
     nc_meta: fetcher.FetchMeta | None = None
     fc_meta: fetcher.FetchMeta | None = None
     tried: list[str] = []
-    for attempt in range(max_cycle_fallbacks):
+    for attempt in range(max_attempts):
         tried.append(cycle.iso())
         log.info("cycle.attempt", extra={"cycle": cycle.iso(), "attempt": attempt + 1})
         try:
             nc_ds, nc_meta = fetcher.open_dataset(cycle, "nowcast")
             fc_ds, fc_meta = fetcher.open_dataset(cycle, "forecast")
-            break
+            return nc_ds, nc_meta, fc_ds, fc_meta, cycle
         except fetcher.FileNotAvailable as exc:
             log.warning("cycle.missing", extra={"cycle": cycle.iso(), "error": str(exc)})
-            # Release anything we opened on this attempt before the retry: the
-            # nowcast Dataset (and any download tempfile) would otherwise leak
-            # for the lifetime of the process when we fall back to the previous
-            # cycle.
             fetcher.close_dataset(nc_ds, nc_meta)
             fetcher.close_dataset(fc_ds, fc_meta)
             nc_ds = fc_ds = nc_meta = fc_meta = None
             cycle = catalog.previous_cycle(cycle)
-    else:
-        log.error("cycle.exhausted", extra={"tried": tried})
-        return 2
+    log.error("cycle.exhausted", extra={"tried": tried})
+    return None
 
-    if nc_ds is None or fc_ds is None or nc_meta is None or fc_meta is None:
-        # Unreachable in practice: the for/else above returns on exhaustion and
-        # the break is reached only after both opens succeed. Defensive guard so
-        # we never deref None even if the loop is later edited.
-        log.error("fetch.invalid_state", extra={"tried": tried})
-        fetcher.close_dataset(nc_ds, nc_meta)
-        fetcher.close_dataset(fc_ds, fc_meta)
-        return 2
 
+def _build_and_publish(
+    cycle: catalog.Cycle,
+    fetched_at: datetime,
+    nc_ds: xr.Dataset,
+    nc_meta: fetcher.FetchMeta,
+    fc_ds: xr.Dataset,
+    fc_meta: fetcher.FetchMeta,
+    out_dir: Path,
+) -> int:
+    """Extract series from already-opened datasets, validate, and publish both feeds.
+
+    Datasets are closed (and any download tempfiles unlinked) before returning;
+    callers do not need to close them.
+    """
     try:
         station_idx = extract.find_station_index(nc_ds)
         surface_idx = extract.surface_layer_index(nc_ds, station_idx)
@@ -100,6 +127,16 @@ def run_once(
     finally:
         fetcher.close_dataset(nc_ds, nc_meta)
         fetcher.close_dataset(fc_ds, fc_meta)
+
+    # Truncated NetCDFs can open cleanly with empty/all-NaN arrays. Refuse to
+    # publish in that case so a bad upstream file doesn't replace a good feed.
+    if len(nc_series.times) == 0 or len(fc_series.times) == 0:
+        raise ValueError(
+            f"Extracted series have no timesteps "
+            f"(nowcast={len(nc_series.times)}, forecast={len(fc_series.times)})"
+        )
+    if np.all(np.isnan(nc_series.temp_c)) or np.all(np.isnan(fc_series.temp_c)):
+        raise ValueError("Extracted temperature is all-NaN; refusing to publish")
 
     log.info(
         "extract.summary",

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import contextlib
 import logging
+import socket
 import tempfile
 import time
 from dataclasses import dataclass
@@ -20,6 +21,11 @@ log = logging.getLogger(__name__)
 OPENDAP_RETRIES: tuple[float, float, float] = (5.0, 15.0, 45.0)
 DOWNLOAD_TIMEOUT_S = 120
 HEAD_TIMEOUT_S = 30
+# Per-attempt cap for OPeNDAP socket reads. netCDF4's HDF5/curl backend does
+# not expose a timeout knob, so we use the process-wide socket default to
+# bound a hung TCP read at xr.open_dataset(). The retry loop above amortizes
+# transient failures.
+OPENDAP_SOCKET_TIMEOUT_S = 90
 
 FetchMode = Literal["opendap", "download"]
 
@@ -69,7 +75,8 @@ def open_dataset(
                     "product": product,
                 },
             )
-            ds = xr.open_dataset(opendap, engine="netcdf4", decode_times=True)
+            with _bounded_socket_timeout(OPENDAP_SOCKET_TIMEOUT_S):
+                ds = xr.open_dataset(opendap, engine="netcdf4", decode_times=True)
             log.info(
                 "opendap.opened",
                 extra={"url": opendap, "elapsed_s": round(time.monotonic() - t0, 2)},
@@ -111,6 +118,17 @@ def open_dataset(
 
     if head.status_code == 404:
         raise FileNotAvailable(f"{download} not found (404)")
+    if 500 <= head.status_code < 600:
+        # Server-side trouble (NOAA outage / overload). Caller may fall back
+        # to the previous cycle; the distinct log event makes that path easy
+        # to spot vs. a client-side misconfig.
+        log.warning(
+            "download.head_server_error",
+            extra={"url": download, "status": head.status_code},
+        )
+        raise RuntimeError(
+            f"NOAA server error: HEAD {download} returned {head.status_code}"
+        )
     if head.status_code >= 400:
         raise RuntimeError(f"HEAD {download} returned {head.status_code}")
 
@@ -155,8 +173,34 @@ def close_dataset(ds: xr.Dataset | None, meta: FetchMeta | None) -> None:
     cleanup never masks the original failure that triggered it.
     """
     if ds is not None:
-        with contextlib.suppress(Exception):
+        try:
             ds.close()
+        except Exception as exc:  # noqa: BLE001 - cleanup must never raise
+            log.warning(
+                "dataset.close_failed",
+                extra={"error": f"{type(exc).__name__}: {exc}"},
+            )
     if meta is not None and meta.local_path is not None:
-        with contextlib.suppress(OSError):
+        try:
             meta.local_path.unlink(missing_ok=True)
+        except OSError as exc:
+            log.warning(
+                "dataset.unlink_failed",
+                extra={"path": str(meta.local_path), "error": str(exc)},
+            )
+
+
+@contextlib.contextmanager
+def _bounded_socket_timeout(seconds: float):
+    """Set the process-wide socket default timeout for the duration of the block.
+
+    netCDF4's libcurl-backed HTTP client honors ``socket.getdefaulttimeout()``
+    for connect/read; without this, a stalled OPeNDAP TCP read could hang
+    well past the scheduler's next fire window.
+    """
+    previous = socket.getdefaulttimeout()
+    socket.setdefaulttimeout(seconds)
+    try:
+        yield
+    finally:
+        socket.setdefaulttimeout(previous)
