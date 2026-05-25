@@ -1,4 +1,4 @@
-import { compass16 } from "@/lib/angles";
+import { compass8Word } from "@/lib/angles";
 import type { TideEvent } from "@/lib/derive/tides";
 import { formatClock, formatNumber } from "@/lib/format";
 import type { TimeseriesPoint } from "@/lib/schema";
@@ -118,7 +118,7 @@ export function NowPanel({ now, point, trend, nextTide }: NowPanelProps) {
           accent="var(--chart-wind)"
           value={formatNumber(wind, 1)}
           unit={unitField(METRICS.windSpeed, units).unit}
-          sub={`From ${compass16(point.wind_bearing_deg)}`}
+          sub={`From the ${compass8Word(point.wind_bearing_deg)}`}
         />
       </div>
     </section>
