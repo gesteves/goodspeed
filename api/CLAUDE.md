@@ -43,7 +43,9 @@ uv run python -m goodspeed.main serve --out-dir ../output # scheduler + HTTP ser
   and `/healthz`. Reads from the same out-dir the scheduler writes to.
 - **`main.py`** — CLI (`run` / `serve`). `serve` runs the scheduler in a
   background thread and uvicorn in the main thread on :8080.
-- **`notify.py`** — best-effort Slack alert on scheduled-run failure.
+- **`notify.py`** — best-effort Bugsnag alert on scheduled-run failure and
+  the once-per-process OPeNDAP→download fallback warning. Silent no-op when
+  `BUGSNAG_API_KEY` is unset.
 - **`logging_config.py`** — all logs are one JSON object per line on stdout.
 
 ## The scheduler + server
@@ -68,7 +70,8 @@ NetCDF files. On a normal day expect 4 `run.complete` + 4 `run.skipped` per
 day.
 
 `_safe_run` wraps `run_once` and, on a non-zero rc (`scheduled_run.failed`) or
-an exception (`scheduled_run.exception`), posts a Slack alert via `notify.py`.
+an exception (`scheduled_run.exception`), reports a Bugsnag event via
+`notify.py`.
 
 Writes are atomic (tmp file in the same directory, then `os.replace`) so a
 concurrent HTTP read never observes a partial file.
@@ -78,7 +81,7 @@ concurrent HTTP read never observes a partial file.
 - **Logging is structured.** Use `log.info("event.name", extra={...})` — never
   f-strings in the message. The message is a dotted event name; data goes in
   `extra`. Errors must never crash a run: `storage.read_published_cycle` and
-  `notify.slack_failure` swallow their own exceptions by design.
+  `notify.report_failure` swallow their own exceptions by design.
 - **Times are tz-aware UTC** everywhere. Use `datetime.now(UTC)` (ruff `UP017`
   enforces the `UTC` alias over `timezone.utc`).
 - **Ruff is CI-gated** — `ci.yml` fails the build on any lint violation. Keep
@@ -94,8 +97,11 @@ Env vars / Fly secrets:
 - `GOODSPEED_OUT_DIR` — directory where `serve` reads/writes the JSON. Defaults
   to `/data` (the Fly Volume mount). The `run` subcommand takes `--out-dir`
   explicitly.
-- `SLACK_WEBHOOK_URL` — *optional*; when set, failed scheduled runs alert here.
-  Unset locally and in tests (alerting is then a silent no-op).
+- `BUGSNAG_API_KEY` — *optional*; when set, failed scheduled runs and the
+  OPeNDAP→download fallback warning are forwarded to Bugsnag. Unset locally
+  and in tests (alerting is then a silent no-op).
+- `BUGSNAG_RELEASE_STAGE` — *optional*; defaults to `production`. Set to
+  `development`/`staging` for non-prod runs so the prod project isn't polluted.
 - `GOODSPEED_SCHEMA_PATH` — overrides schema lookup (set in the Docker image).
 
 ## Deploy

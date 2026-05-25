@@ -153,7 +153,7 @@ def _build_and_publish(
     )
 
     if nc_meta.mode == "download" or fc_meta.mode == "download":
-        notify.slack_download_fallback(
+        notify.report_download_fallback(
             {
                 "cycle": cycle.iso(),
                 "nowcast_mode": nc_meta.mode,
@@ -328,10 +328,10 @@ def _safe_run(out_dir: Path) -> None:
         rc = run_once(out_dir=out_dir)
         if rc != 0:
             log.error("scheduled_run.failed", extra={"rc": rc})
-            notify.slack_failure("scheduled_run.failed", {"rc": rc})
+            notify.report_failure("scheduled_run.failed", {"rc": rc})
     except Exception as exc:
         log.exception("scheduled_run.exception")
-        notify.slack_failure(
+        notify.report_failure(
             "scheduled_run.exception",
             {"error": f"{type(exc).__name__}: {exc}"},
         )
@@ -375,6 +375,7 @@ def cli(argv: list[str] | None = None) -> int:
 
     args = parser.parse_args(argv)
     logging_config.configure(level=args.log_level)
+    notify.configure()
 
     if args.cmd == "run":
         return run_once(out_dir=args.out_dir, force=args.force)

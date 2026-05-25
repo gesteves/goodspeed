@@ -13,7 +13,9 @@
 #   https://goodspeed-api.fly.dev/field-latest.json
 #
 # Optional secrets:
-#   SLACK_WEBHOOK_URL  - if set, a failed scheduled run posts an alert here.
+#   BUGSNAG_API_KEY        - if set, failed scheduled runs + the OPeNDAP→download
+#                            fallback warning are forwarded to Bugsnag.
+#   BUGSNAG_RELEASE_STAGE  - defaults to "production"; override for non-prod machines.
 
 app = "goodspeed-api"
 primary_region = "iad"

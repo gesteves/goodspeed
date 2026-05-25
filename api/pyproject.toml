@@ -16,6 +16,7 @@ dependencies = [
     "requests>=2.32,<3",
     "starlette>=0.40,<1.2",
     "uvicorn[standard]>=0.32,<0.48",
+    "bugsnag>=4.9,<5",
 ]
 
 [project.optional-dependencies]
