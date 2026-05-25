@@ -3,6 +3,18 @@ import "mapbox-gl/dist/mapbox-gl.css";
 import { useEffect, useMemo, useState } from "react";
 import { PUBLIC_MAPBOX_TOKEN } from "astro:env/client";
 import { tempColor } from "@/lib/colors";
+import {
+  ARROW_HEAD_BACK,
+  ARROW_HEAD_FRONT,
+  ARROW_HEAD_HALF,
+  ARROW_SHAFT_PAD,
+  ARROW_SHAFT_WIDTH,
+  FINISH_LAT,
+  FINISH_LON,
+  SLACK_SPEED_KT,
+  START_LAT,
+  START_LON,
+} from "@/lib/map-constants";
 import type { FieldFeed } from "@/lib/schema";
 import { useScrub } from "../charts/ScrubContext";
 import { useTheme } from "../providers/ThemeProvider";
@@ -22,16 +34,6 @@ export interface BayMapProps {
 
 const LIGHT_STYLE = "mapbox://styles/mapbox/light-v11";
 const DARK_STYLE = "mapbox://styles/mapbox/dark-v11";
-
-// Race finish: St. Francis Yacht Club.
-const FINISH_LAT = 37.80706968914476;
-const FINISH_LON = -122.4480366321103;
-
-// Race start: boat drop on race day, location chosen for conditions. The
-// disk is centered on Alcatraz with a radius that covers the rough envelope
-// of likely drop points -- a few hundred metres, no fixed heading.
-const START_LAT = 37.82666939246081;
-const START_LON = -122.42268871139198;
 
 function offsetLonByMeters(lat: number, lon: number, meters: number): number {
   return lon + meters / (111_320 * Math.cos((lat * Math.PI) / 180));
@@ -243,18 +245,22 @@ export function BayMap({ field, nowFieldIndex, pointTimes }: BayMapProps) {
       units === "imperial" ? frame.current_speed_kt : frame.current_speed_ms;
     const tempUnit = units === "imperial" ? "°F" : "°C";
     const speedUnit = units === "imperial" ? "kt" : "m/s";
+    // Schema enforces .min(1) on each array but not parity across them; skip
+    // any trailing positions where either array runs short.
+    const n = Math.min(temps.length, speeds.length);
+    if (n === 0) return null;
     let minT = Infinity;
     let maxT = -Infinity;
     let minS = Infinity;
     let maxS = -Infinity;
-    for (let i = 0; i < temps.length; i++) {
+    for (let i = 0; i < n; i++) {
       if (temps[i] < minT) minT = temps[i];
       if (temps[i] > maxT) maxT = temps[i];
       if (speeds[i] < minS) minS = speeds[i];
       if (speeds[i] > maxS) maxS = speeds[i];
     }
     return (
-      `Modeled bay map across ${temps.length} water points in the ` +
+      `Modeled bay map across ${n} water points in the ` +
       `central San Francisco Bay near Alcatraz. Water temperature ranges from ` +
       `${minT.toFixed(1)} to ${maxT.toFixed(1)} ${tempUnit}; current speed ` +
       `${minS.toFixed(1)} to ${maxS.toFixed(1)} ${speedUnit}. Race start is a ` +
@@ -269,17 +275,27 @@ export function BayMap({ field, nowFieldIndex, pointTimes }: BayMapProps) {
       <div className={styles.map} ref={setContainer} />
       {positions.length > 0 && frame && (
         <svg className={styles.overlay} aria-hidden="true">
-          {positions.map((p, i) => (
-            <Arrow
-              key={i}
-              x={p.x}
-              y={p.y}
-              bearing={frame.current_bearing_deg[i]}
-              speedKt={frame.current_speed_kt[i]}
-              tempC={frame.water_temp_c[i]}
-              scale={arrowScale}
-            />
-          ))}
+          {positions.map((p, i) => {
+            // Skip any grid index whose frame data is missing: schema enforces
+            // .min(1) on each frame array but not parity with positions.
+            const bearing = frame.current_bearing_deg[i];
+            const speedKt = frame.current_speed_kt[i];
+            const tempC = frame.water_temp_c[i];
+            if (bearing == null || speedKt == null || tempC == null) {
+              return null;
+            }
+            return (
+              <Arrow
+                key={i}
+                x={p.x}
+                y={p.y}
+                bearing={bearing}
+                speedKt={speedKt}
+                tempC={tempC}
+                scale={arrowScale}
+              />
+            );
+          })}
           {startPx &&
             startRadiusPx > 0 &&
             finishPx &&
@@ -388,7 +404,7 @@ function Arrow({
   scale: number;
 }) {
   const color = tempColor(tempC);
-  if (speedKt < 0.08) {
+  if (speedKt < SLACK_SPEED_KT) {
     return (
       <circle
         cx={x}
@@ -401,10 +417,10 @@ function Arrow({
     );
   }
   const len = arrowPx(speedKt) * scale;
-  const headHalf = 4.5 * scale;
-  const headBack = 5 * scale;
-  const headFront = 3 * scale;
-  const shaftPad = 4 * scale;
+  const headHalf = ARROW_HEAD_HALF * scale;
+  const headBack = ARROW_HEAD_BACK * scale;
+  const headFront = ARROW_HEAD_FRONT * scale;
+  const shaftPad = ARROW_SHAFT_PAD * scale;
   const tip = -len / 2;
   return (
     <g transform={`rotate(${bearing} ${x} ${y})`}>
@@ -414,7 +430,7 @@ function Arrow({
         x2={x}
         y2={y + tip + shaftPad}
         stroke={color}
-        strokeWidth={3 * scale}
+        strokeWidth={ARROW_SHAFT_WIDTH * scale}
         strokeLinecap="round"
       />
       <polygon

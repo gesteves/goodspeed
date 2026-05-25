@@ -31,6 +31,7 @@
   --live: #1f9e44;
   --warn: #c2410c;
   --warn-soft: #fbe6da;
+  --offline: #b91c1c;
 
   /* Charts */
   --chart-grid: #e4e9ed;
@@ -70,6 +71,7 @@
     --live: #3fb950;
     --warn: #f0883e;
     --warn-soft: #3a2415;
+    --offline: #f87171;
 
     --chart-grid: #243039;
     --chart-axis: #5b6b76;
@@ -105,6 +107,7 @@
   --live: #3fb950;
   --warn: #f0883e;
   --warn-soft: #3a2415;
+  --offline: #f87171;
 
   --chart-grid: #243039;
   --chart-axis: #5b6b76;

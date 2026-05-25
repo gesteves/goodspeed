@@ -16,8 +16,8 @@ export default defineConfig({
   adapter: netlify(),
   integrations: [react()],
 
-  // Typed env vars. Required-but-missing vars throw at startup, matching the
-  // old server-side Zod validation in `src/lib/env.ts`.
+  // Typed env vars. Required-but-missing vars throw at startup; `src/lib/env.ts`
+  // is now a thin re-export of the validated values from `astro:env/server`.
   env: {
     schema: {
       GOODSPEED_FEED_URL: envField.string({

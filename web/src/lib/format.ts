@@ -3,31 +3,50 @@ import { DISPLAY_TZ } from "./constants";
 
 /** Formatting helpers. All times render in the swim's local timezone. */
 
+const FALLBACK = "—";
+
 const toDate = (value: string | number | Date): Date =>
   value instanceof Date ? value : new Date(value);
 
+/**
+ * `formatInTimeZone` throws on a malformed ISO string. Wrap so a single bad
+ * timestamp returns an em-dash placeholder instead of crashing the panel
+ * (every formatter is called from render).
+ */
+function safeFormat(value: string | number | Date, fmt: string): string {
+  try {
+    return formatInTimeZone(toDate(value), DISPLAY_TZ, fmt);
+  } catch {
+    return FALLBACK;
+  }
+}
+
 /** "3:00 PM" */
 export function formatClock(value: string | number | Date): string {
-  return formatInTimeZone(toDate(value), DISPLAY_TZ, "h:mm a");
+  return safeFormat(value, "h:mm a");
 }
 
 /** "Fri 3:00 PM" */
 export function formatDayClock(value: string | number | Date): string {
-  return formatInTimeZone(toDate(value), DISPLAY_TZ, "EEE h:mm a");
+  return safeFormat(value, "EEE h:mm a");
 }
 
 /** "May 22, 3:00 PM PDT" */
 export function formatDateTime(value: string | number | Date): string {
-  return formatInTimeZone(toDate(value), DISPLAY_TZ, "MMM d, h:mm a zzz");
+  return safeFormat(value, "MMM d, h:mm a zzz");
 }
 
 /** Short chart x-axis label, e.g. "3 PM" or "Fri" at midnight. */
 export function formatAxisTick(value: string | number | Date): string {
-  const d = toDate(value);
-  const hour = Number(formatInTimeZone(d, DISPLAY_TZ, "H"));
-  return hour === 0
-    ? formatInTimeZone(d, DISPLAY_TZ, "EEE")
-    : formatInTimeZone(d, DISPLAY_TZ, "ha");
+  try {
+    const d = toDate(value);
+    const hour = Number(formatInTimeZone(d, DISPLAY_TZ, "H"));
+    return hour === 0
+      ? formatInTimeZone(d, DISPLAY_TZ, "EEE")
+      : formatInTimeZone(d, DISPLAY_TZ, "ha");
+  } catch {
+    return FALLBACK;
+  }
 }
 
 /** Compact relative time, minute-precise: "just now", "35m ago", "in 1h 5m", "2d 3h ago". */

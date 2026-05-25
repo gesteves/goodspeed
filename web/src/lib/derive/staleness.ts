@@ -1,4 +1,4 @@
-export type Freshness = "fresh" | "stale";
+export type Freshness = "fresh" | "stale" | "offline";
 
 export interface Staleness {
   ageMs: number;
@@ -12,17 +12,23 @@ export interface Staleness {
  */
 const STALE_AFTER_HOURS = 9;
 
+/**
+ * If the model hasn't updated in this long, treat the feed as offline rather
+ * than merely stale. Three to four cycles missed -- well past anything
+ * explainable by a normal hiccup, and worth flagging distinctly in the UI.
+ */
+const OFFLINE_AFTER_HOURS = 24;
+
 export function getStaleness(
   cycleIso: string,
   now: Date = new Date(),
 ): Staleness {
   const ageMs = now.getTime() - new Date(cycleIso).getTime();
   const ageHours = ageMs / 3_600_000;
-  return {
-    ageMs,
-    ageHours,
-    status: ageHours > STALE_AFTER_HOURS ? "stale" : "fresh",
-  };
+  let status: Freshness = "fresh";
+  if (ageHours > OFFLINE_AFTER_HOURS) status = "offline";
+  else if (ageHours > STALE_AFTER_HOURS) status = "stale";
+  return { ageMs, ageHours, status };
 }
 
 /** NOAA publishes SFBOFS cycles at these UTC hours. */

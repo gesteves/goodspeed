@@ -307,7 +307,7 @@ export function ForecastCharts(props: ForecastChartsProps) {
       <div className={styles.stack}>
         <ParentSize debounceTime={0} style={{ width: "100%" }}>
           {({ width }) =>
-            width > 1 ? (
+            width > 1 && props.data.length > 0 ? (
               <ChartStack width={width} {...props} />
             ) : (
               <div className={styles.placeholder} />

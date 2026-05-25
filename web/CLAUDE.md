@@ -63,11 +63,13 @@ React 16/17/18 peer range and we're on React 19.
 - `netlify/edge-functions/og.tsx` — Deno edge function at `/og.png` that
   renders the OG share image: Mapbox static basemap + the same arrows,
   start ring, and finish bullseye that `components/map/BayMap.tsx` draws.
-  It cannot import from `src/` (different runtime + bundler), so the arrow
-  geometry, color ramp, marker constants, and projection math are inlined.
-  **Any visual change to the live map -- arrow shape, color stops, marker
-  positions or radii, view extent -- must be ported to `og.tsx` to keep
-  the share preview in sync.**
+  Marker coordinates and arrow-geometry numbers live in
+  `src/lib/map-constants.ts` and are imported by both files. The color
+  ramp and projection math are still inlined (different runtimes can't
+  share helper code).
+  **Any visual change to the live map that touches color stops, projection
+  math, or view extent must be ported to `og.tsx` to keep the share
+  preview in sync; marker/arrow constants stay in sync automatically.**
 - `src/pages/{404,500}.astro` — error pages. 500.astro is rendered
   automatically by Astro for unhandled SSR exceptions in `index.astro`'s
   frontmatter (middleware runs first, so `Astro.locals.theme` is populated).

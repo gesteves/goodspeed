@@ -2,6 +2,18 @@
 import React from "https://esm.sh/react@18.2.0";
 import { ImageResponse } from "https://deno.land/x/og_edge/mod.ts";
 import { z } from "https://esm.sh/zod@3.23.8";
+import {
+  ARROW_HEAD_BACK,
+  ARROW_HEAD_FRONT,
+  ARROW_HEAD_HALF,
+  ARROW_SHAFT_PAD,
+  ARROW_SHAFT_WIDTH,
+  FINISH_LAT,
+  FINISH_LON,
+  SLACK_SPEED_KT,
+  START_LAT,
+  START_LON,
+} from "../../src/lib/map-constants.ts";
 
 const WIDTH = 1200;
 const HEIGHT = 630;
@@ -14,14 +26,10 @@ const EARTH_RADIUS_MI = 3958.7613;
 const MI_PER_DEG_LAT = (Math.PI * EARTH_RADIUS_MI) / 180;
 const VIEW_WIDTH_MILES = VIEW_HEIGHT_MILES * (WIDTH / HEIGHT);
 
-// Race start / finish, mirroring BayMap.tsx. Start is centered on Alcatraz
-// with a ring that bounds the boat-drop envelope (edge sits 1.5 mi from the
-// finish). Finish is the St. Francis Yacht Club bullseye.
-const START_LAT = 37.82666939246081;
-const START_LON = -122.42268871139198;
-const FINISH_LAT = 37.80706968914476;
-const FINISH_LON = -122.4480366321103;
-const MARKER_COLOR = "#0f1b24"; // matches the light-theme --text token
+// Marker stroke color — matches the light-theme `--text` token (live map
+// uses CSS vars; the OG renders against a fixed light basemap). Start/finish
+// coordinates live in `src/lib/map-constants.ts`, shared with BayMap.tsx.
+const MARKER_COLOR = "#0f1b24";
 
 function haversineMeters(
   lat1: number,
@@ -224,13 +232,23 @@ export default async function handler(_req: Request): Promise<Response> {
   const ux = dx / axLen;
   const uy = dy / axLen;
 
-  const n = Math.min(grid.lat.length, grid.lon.length);
+  // The schema enforces .min(1) on each array but not parity across them. If a
+  // malformed feed has shorter frame arrays than the grid, fall back to a
+  // basemap-only image instead of letting an `undefined` reach the SVG
+  // (which would 500 the function).
+  const n = Math.min(
+    grid.lat.length,
+    grid.lon.length,
+    frame.current_speed_kt.length,
+    frame.current_bearing_deg.length,
+    frame.water_temp_c.length,
+  );
   const arrows: React.ReactNode[] = [];
   for (let i = 0; i < n; i++) {
     const { x, y } = project(grid.lon[i], grid.lat[i]);
     const sp = frame.current_speed_kt[i];
     const color = tempColor(frame.water_temp_c[i]);
-    if (sp < 0.08) {
+    if (sp < SLACK_SPEED_KT) {
       arrows.push(
         <circle
           key={i}
@@ -247,10 +265,10 @@ export default async function handler(_req: Request): Promise<Response> {
     const len = arrowPx(sp);
     const tip = -len / 2;
     const bearing = frame.current_bearing_deg[i];
-    const headHalf = 4.5 * ARROW_SCALE;
-    const headBack = 5 * ARROW_SCALE;
-    const headFront = 3 * ARROW_SCALE;
-    const shaftPad = 4 * ARROW_SCALE;
+    const headHalf = ARROW_HEAD_HALF * ARROW_SCALE;
+    const headBack = ARROW_HEAD_BACK * ARROW_SCALE;
+    const headFront = ARROW_HEAD_FRONT * ARROW_SCALE;
+    const shaftPad = ARROW_SHAFT_PAD * ARROW_SCALE;
     arrows.push(
       <g key={i} transform={`rotate(${bearing} ${x} ${y})`}>
         <line
@@ -259,7 +277,7 @@ export default async function handler(_req: Request): Promise<Response> {
           x2={x}
           y2={y + tip + shaftPad}
           stroke={color}
-          strokeWidth={3 * ARROW_SCALE}
+          strokeWidth={ARROW_SHAFT_WIDTH * ARROW_SCALE}
           strokeLinecap="round"
         />
         <polygon

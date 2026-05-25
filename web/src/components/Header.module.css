@@ -74,6 +74,10 @@
   background: var(--warn);
 }
 
+.dot[data-status="offline"] {
+  background: var(--offline);
+}
+
 @keyframes statusBlink {
   0%,
   100% {

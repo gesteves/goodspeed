@@ -14,14 +14,48 @@ import { getDashboardData } from "@/lib/data-source";
  * (matching the upstream feed's cadence), with a 10-min stale-while-revalidate
  * window so a momentarily unavailable origin doesn't break the dashboard.
  */
+
+// Per-fetch timeouts in raw.ts already cap each upstream at 3.5s, but the
+// point feed and the field feed are awaited concurrently and could
+// theoretically stack. This hard cap keeps a worst-case endpoint within the
+// Netlify function budget and signals the client to back off cleanly.
+const ENDPOINT_TIMEOUT_MS = 20_000;
+
+class EndpointTimeout extends Error {
+  constructor() {
+    super("dashboard.json overall timeout");
+  }
+}
+
 export const GET: APIRoute = async () => {
-  const { feed, field, fieldStatus } = await getDashboardData();
-  return new Response(JSON.stringify({ feed, field, fieldStatus }), {
-    headers: {
-      "Content-Type": "application/json",
-      "Cache-Control": "public, max-age=0, must-revalidate",
-      "Netlify-CDN-Cache-Control":
-        "public, s-maxage=300, stale-while-revalidate=600",
-    },
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new EndpointTimeout()), ENDPOINT_TIMEOUT_MS);
   });
+  try {
+    const { feed, field, fieldStatus } = await Promise.race([
+      getDashboardData(),
+      timeout,
+    ]);
+    return new Response(JSON.stringify({ feed, field, fieldStatus }), {
+      headers: {
+        "Content-Type": "application/json",
+        "Cache-Control": "public, max-age=0, must-revalidate",
+        "Netlify-CDN-Cache-Control":
+          "public, s-maxage=300, stale-while-revalidate=600",
+      },
+    });
+  } catch (err) {
+    console.error("dashboard.json: data fetch failed", err);
+    const status = err instanceof EndpointTimeout ? 504 : 502;
+    return new Response(JSON.stringify({ error: "Upstream unavailable" }), {
+      status,
+      headers: {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-store",
+      },
+    });
+  } finally {
+    if (timer !== undefined) clearTimeout(timer);
+  }
 };

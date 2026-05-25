@@ -14,6 +14,11 @@ describe("getStaleness", () => {
     const s = getStaleness("2026-05-20T00:00:00Z", now); // 12 h old
     expect(s.status).toBe("stale");
   });
+
+  it("treats a very old cycle as offline", () => {
+    const s = getStaleness("2026-05-19T09:00:00Z", now); // 27 h old
+    expect(s.status).toBe("offline");
+  });
 });
 
 describe("nextCycleAt", () => {
