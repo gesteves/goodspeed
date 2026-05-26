@@ -8,12 +8,7 @@ import {
   ARROW_HEAD_HALF,
   ARROW_SHAFT_PAD,
   ARROW_SHAFT_WIDTH,
-  FINISH_LAT,
-  FINISH_LON,
-  FINISH_ICON,
   SLACK_SPEED_KT,
-  START_LAT,
-  START_LON,
 } from "../../src/lib/map-constants.ts";
 
 const WIDTH = 1200;
@@ -27,34 +22,6 @@ const EARTH_RADIUS_MI = 3958.7613;
 const MI_PER_DEG_LAT = (Math.PI * EARTH_RADIUS_MI) / 180;
 const VIEW_WIDTH_MILES = VIEW_HEIGHT_MILES * (WIDTH / HEIGHT);
 
-// Marker stroke color — matches the light-theme `--text` token (live map
-// uses CSS vars; the OG renders against a fixed light basemap). Start/finish
-// coordinates live in `src/lib/map-constants.ts`, shared with BayMap.tsx.
-const MARKER_COLOR = "#0f1b24";
-
-function haversineMeters(
-  lat1: number,
-  lon1: number,
-  lat2: number,
-  lon2: number,
-): number {
-  const R = 6_371_000;
-  const toRad = (d: number) => (d * Math.PI) / 180;
-  const dLat = toRad(lat2 - lat1);
-  const dLon = toRad(lon2 - lon1);
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
-  return 2 * R * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-}
-
-function offsetLonByMeters(lat: number, lon: number, meters: number): number {
-  return lon + meters / (111_320 * Math.cos((lat * Math.PI) / 180));
-}
-
-const START_RADIUS_M =
-  haversineMeters(START_LAT, START_LON, FINISH_LAT, FINISH_LON) -
-  1.5 * 1609.344;
 
 // Water-temperature color ramp. Anchors are the OKLCH stops in
 // web/src/lib/colors.ts converted offline to sRGB; we interpolate in sRGB on
@@ -214,19 +181,6 @@ export default async function handler(_req: Request): Promise<Response> {
     `${center.lon},${center.lat},${zoom.toFixed(4)}/` +
     `${WIDTH}x${HEIGHT}@2x?access_token=${TOKEN}`;
 
-  // Project the start centre, an edge point at START_RADIUS_M east of it,
-  // and the finish in one go. Pixel radius and the gradient axis are both
-  // derived from these so they stay geographically anchored at any zoom.
-  const startPx = project(START_LON, START_LAT);
-  const startEdgePx = project(
-    offsetLonByMeters(START_LAT, START_LON, START_RADIUS_M),
-    START_LAT,
-  );
-  const finishPx = project(FINISH_LON, FINISH_LAT);
-  const startRadiusPx = Math.max(
-    Math.hypot(startEdgePx.x - startPx.x, startEdgePx.y - startPx.y),
-    36,
-  );
   // The schema enforces .min(1) on each array but not parity across them. If a
   // malformed feed has shorter frame arrays than the grid, fall back to a
   // basemap-only image instead of letting an `undefined` reach the SVG
@@ -306,42 +260,7 @@ export default async function handler(_req: Request): Promise<Response> {
         xmlns="http://www.w3.org/2000/svg"
         style={{ position: "absolute", top: 0, left: 0 }}
       >
-        <defs>
-          <linearGradient
-            id="og-startRing"
-            gradientUnits="userSpaceOnUse"
-            x1={startPx.x}
-            y1={startPx.y - startRadiusPx}
-            x2={startPx.x}
-            y2={startPx.y + startRadiusPx}
-          >
-            <stop offset="0%" stopColor={MARKER_COLOR} stopOpacity="0" />
-            <stop offset="50%" stopColor={MARKER_COLOR} stopOpacity="0" />
-            <stop offset="100%" stopColor={MARKER_COLOR} stopOpacity="1" />
-          </linearGradient>
-        </defs>
         {arrows}
-        <circle
-          cx={startPx.x}
-          cy={startPx.y}
-          r={startRadiusPx}
-          fill="none"
-          stroke="url(#og-startRing)"
-          strokeWidth={1.5}
-          strokeDasharray="5 4"
-          opacity={0.55}
-        />
-        {(() => {
-          const s = 23 / FINISH_ICON.height;
-          return (
-            <g
-              opacity={0.55}
-              transform={`translate(${finishPx.x} ${finishPx.y}) scale(${s}) translate(${-FINISH_ICON.width / 2} ${-FINISH_ICON.height / 2})`}
-            >
-              <path d={FINISH_ICON.pathData} fill={MARKER_COLOR} />
-            </g>
-          );
-        })()}
       </svg>
     </div>
   );
