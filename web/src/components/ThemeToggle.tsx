@@ -4,7 +4,7 @@ import {
   faDesktop,
   faMoon,
   faSunBright,
-} from "@fortawesome/pro-light-svg-icons";
+} from "@fortawesome/pro-regular-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import type { Theme } from "@/lib/preferences";
 import { useTheme } from "./providers/ThemeProvider";

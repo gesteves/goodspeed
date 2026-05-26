@@ -7,7 +7,7 @@ import {
   faWaterArrowDown,
   faWaterArrowUp,
   faWind,
-} from "@fortawesome/pro-light-svg-icons";
+} from "@fortawesome/pro-regular-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { compass8Word } from "@/lib/angles";
 import type { TideEvent } from "@/lib/derive/tides";

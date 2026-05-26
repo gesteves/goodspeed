@@ -1,4 +1,4 @@
-import { faWater } from "@fortawesome/pro-light-svg-icons";
+import { faWater } from "@fortawesome/pro-regular-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { compass8Word } from "@/lib/angles";
 import { classifyCurrent } from "@/lib/derive/currents";
