@@ -1,12 +1,14 @@
 /* Section wraps the map box + the time-axis strip beneath it as a single
-   visual unit. The map's aspect ratio sits on `.mapBox` (the inner div),
-   not the section, so the strip can flow naturally underneath. */
+   visual unit. The map and strip are flush -- the map's bottom corners are
+   squared and the strip's top corners are squared, so together they form a
+   single rounded card with one shadow. */
 .section {
   position: relative;
   width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
 }
 
 /* The mapBox's aspect-ratio is set inline from the field grid's extent so
@@ -21,8 +23,8 @@
   width: 100%;
   height: 100%;
   border: 1px solid var(--border);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
+  border-bottom-width: 0;
+  border-radius: var(--radius) var(--radius) 0 0;
   overflow: hidden;
 }
 
@@ -30,7 +32,8 @@
   width: 100%;
   height: 100%;
   border: 1px solid var(--border);
-  border-radius: var(--radius);
+  border-bottom-width: 0;
+  border-radius: var(--radius) var(--radius) 0 0;
   background: var(--surface-2);
 }
 

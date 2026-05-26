@@ -1,6 +1,14 @@
 .strip {
   width: 100%;
-  padding: 4px 0 0;
+  /* Visually a continuation of the map box above: shared border, the map's
+     bottom corners are squared, this strip's bottom corners take the radius
+     so map + strip read as one rounded card. The small top padding keeps
+     the "now" hairline from touching the map's bottom edge. */
+  padding-top: 6px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-top-width: 0;
+  border-radius: 0 0 var(--radius) var(--radius);
   /* Same touch-action handling as the chart stack: vertical scroll stays
      with the page; horizontal motion is reserved for scrubbing. */
   touch-action: pan-y;
@@ -10,8 +18,7 @@
 
 .strip:focus-visible {
   outline: 2px solid var(--focus, currentColor);
-  outline-offset: 2px;
-  border-radius: var(--radius-sm, 6px);
+  outline-offset: 0;
 }
 
 .strip svg {
@@ -19,7 +26,7 @@
 }
 
 .placeholder {
-  height: 60px;
+  height: 66px;
 }
 
 .baseline {
@@ -47,7 +54,7 @@
 }
 
 .hoverLabel {
-  fill: var(--text);
+  fill: var(--text-muted);
   font-size: 11px;
   font-weight: 400;
   font-variant-numeric: tabular-nums;
