@@ -28,10 +28,6 @@
   --flood: #1f9d8b;
   --ebb: #d98324;
   --slack: #8a97a1;
-  --live: #1f9e44;
-  --warn: #c2410c;
-  --warn-soft: #fbe6da;
-  --offline: #b91c1c;
 
   /* Charts */
   --chart-grid: #e4e9ed;
@@ -68,10 +64,6 @@
     --flood: #3fc9b3;
     --ebb: #e6a23c;
     --slack: #6b7884;
-    --live: #3fb950;
-    --warn: #f0883e;
-    --warn-soft: #3a2415;
-    --offline: #f87171;
 
     --chart-grid: #243039;
     --chart-axis: #5b6b76;
@@ -104,10 +96,6 @@
   --flood: #3fc9b3;
   --ebb: #e6a23c;
   --slack: #6b7884;
-  --live: #3fb950;
-  --warn: #f0883e;
-  --warn-soft: #3a2415;
-  --offline: #f87171;
 
   --chart-grid: #243039;
   --chart-axis: #5b6b76;

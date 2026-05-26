@@ -61,39 +61,6 @@
   font-size: 0.84rem;
 }
 
-.dot {
-  width: 9px;
-  height: 9px;
-  flex: none;
-  border-radius: 50%;
-  background: var(--live);
-  animation: statusBlink 1.6s ease-in-out infinite;
-}
-
-.dot[data-status="stale"] {
-  background: var(--warn);
-}
-
-.dot[data-status="offline"] {
-  background: var(--offline);
-}
-
-@keyframes statusBlink {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.25;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .dot {
-    animation: none;
-  }
-}
-
 .statusText strong {
   font-weight: 700;
 }

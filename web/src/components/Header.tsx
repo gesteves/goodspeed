@@ -48,11 +48,6 @@ export function Header({
               : undefined
         }
       >
-        <span
-          className={styles.dot}
-          data-status={staleness.status}
-          aria-hidden="true"
-        />
         <span className={styles.statusText}>
           Forecast updated{" "}
           <span title={formatDateTime(feed.model.fetched_at)}>
@@ -102,7 +97,6 @@ export function HeaderSkeleton() {
       </div>
 
       <div className={styles.status} aria-live="polite">
-        <span className={styles.dot} aria-hidden="true" />
         <span className={styles.statusText}>Loading conditions…</span>
       </div>
     </header>
