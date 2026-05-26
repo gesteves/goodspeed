@@ -1,4 +1,10 @@
 ---
+/**
+ * Custom 500 page. Astro renders this automatically when an SSR exception
+ * escapes a page's frontmatter -- e.g. `getDashboardData()` throws because
+ * both the upstream feed and the in-memory fallback cache are unavailable.
+ * Middleware has already run, so the saved theme is applied.
+ */
 import Layout from "@/layouts/Layout.astro";
 import errorStyles from "@/styles/dashboard-error.module.css";
 ---

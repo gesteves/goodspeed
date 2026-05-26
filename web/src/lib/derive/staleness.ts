@@ -1,3 +1,7 @@
+/**
+ * Feed freshness classification. Drives the staleness banner in the header
+ * and the disabled state of charts when the model has gone silent.
+ */
 export type Freshness = "fresh" | "stale" | "offline";
 
 export interface Staleness {
@@ -19,6 +23,14 @@ const STALE_AFTER_HOURS = 9;
  */
 const OFFLINE_AFTER_HOURS = 24;
 
+/**
+ * Compute the age of the published model cycle and its freshness bucket.
+ *
+ * `cycleIso` is the `model.cycle` ISO string from the feed (the cycle hour,
+ * not the fetch time). Age is measured against `now` -- defaulted but
+ * overridable so server-rendered staleness can be computed at request time
+ * and tests can pin the clock.
+ */
 export function getStaleness(
   cycleIso: string,
   now: Date = new Date(),

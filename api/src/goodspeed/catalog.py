@@ -20,18 +20,32 @@ Product = Literal["stations", "fields"]
 
 @dataclass(frozen=True, slots=True)
 class Cycle:
-    """A specific SFBOFS model cycle (UTC date + cycle hour)."""
+    """A specific SFBOFS model cycle (UTC date + cycle hour).
+
+    NOAA runs SFBOFS four times per UTC day at the cycle hours listed in
+    :data:`CYCLES`. A ``Cycle`` is the (date, hour) pair that uniquely names
+    one model run — every published file (nowcast/forecast, stations/fields,
+    per-hour regulargrid) embeds it in its filename.
+    """
 
     date: date
     hour: int
 
     def datetime_utc(self) -> datetime:
+        """Return the cycle start time as a tz-aware UTC ``datetime``."""
         return datetime.combine(self.date, time(self.hour), tzinfo=UTC)
 
     def iso(self) -> str:
+        """Format the cycle as ``YYYY-MM-DDTHH:00:00Z`` for logs and the JSON feed."""
         return f"{self.date.isoformat()}T{self.hour:02d}:00:00Z"
 
     def filename(self, kind: Kind, product: Product = "stations") -> str:
+        """Build the NOAA filename for this cycle's ``kind`` (nowcast/forecast) file.
+
+        ``product`` selects between the per-station file (default, ~250 named
+        locations, small) and the full FVCOM mesh fields file (much larger;
+        always slice server-side via OPeNDAP before loading).
+        """
         return (
             f"sfbofs.t{self.hour:02d}z.{self.date.strftime('%Y%m%d')}"
             f".{product}.{kind}.nc"
@@ -100,4 +114,5 @@ def regulargrid_filename(cycle: Cycle, phase: Phase, hour: int) -> str:
 
 
 def regulargrid_dods_url(cycle: Cycle, phase: Phase, hour: int) -> str:
+    """OPeNDAP URL for a single per-hour regulargrid file (used by the field feed)."""
     return f"{_model_dir(cycle, DODS_PATH)}/{regulargrid_filename(cycle, phase, hour)}"

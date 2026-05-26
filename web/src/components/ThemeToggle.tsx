@@ -16,6 +16,11 @@ config.autoAddCss = false;
 
 const iconStyle = { width: 16, height: 16 };
 
+/**
+ * 3-position segmented control for theme: system / light / dark. Reads from
+ * and writes to {@link ThemeProvider}, which persists the choice in the
+ * `gs-theme` cookie so SSR can apply it flash-free.
+ */
 export function ThemeToggle() {
   const { theme, setTheme } = useTheme();
   return (

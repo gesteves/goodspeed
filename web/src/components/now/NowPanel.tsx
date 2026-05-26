@@ -138,6 +138,14 @@ export function NowPanelSkeleton() {
   );
 }
 
+/**
+ * "Right now" panel: a 4-card grid (water temp, current, tide, wind) showing
+ * the value at `point` (typically the timeseries entry closest to wall-clock
+ * "now"). Trend arrows on the temp + tide icons come from
+ * `levelTrend` / `tempTrend` in `lib/derive/now.ts`. Re-renders whenever the
+ * Dashboard ticks its local clock so the cards follow the user's clock, not
+ * the server's.
+ */
 export function NowPanel({
   now,
   point,

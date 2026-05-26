@@ -1,4 +1,9 @@
 ---
+/**
+ * Custom 404 page. Astro serves this for any unmatched route. Reuses the same
+ * `dashboard-error.module.css` card styling as the SSR 500 and the in-island
+ * error boundary fallback so the three error surfaces look identical.
+ */
 import Layout from "@/layouts/Layout.astro";
 import errorStyles from "@/styles/dashboard-error.module.css";
 ---

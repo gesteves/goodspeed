@@ -44,6 +44,11 @@ export function ThemeProvider({
   );
 }
 
+/**
+ * Read the active theme from the nearest {@link ThemeProvider}. Throws when
+ * used outside one (which would mean a component slipped out of the Dashboard
+ * island -- always a bug).
+ */
 export function useTheme(): ThemeContextValue {
   const ctx = useContext(ThemeContext);
   if (!ctx) throw new Error("useTheme must be used within a ThemeProvider");

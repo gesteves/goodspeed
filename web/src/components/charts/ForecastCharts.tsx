@@ -114,6 +114,16 @@ function DirectionReadout({
   );
 }
 
+/**
+ * The actual six-row chart stack. Split from `ForecastCharts` so it only
+ * renders once `<ParentSize>` has measured a non-zero width -- visx chart
+ * setup is wasted work at width 0.
+ *
+ * Order matters: stacked charts share a single x scale built from the
+ * timeseries' time range, so every row aligns pixel-for-pixel on the time
+ * axis (water temp, current speed, current arrows, tide w/ H/L markers, wind
+ * speed, wind arrows).
+ */
 function ChartStack({
   width,
   data,
@@ -276,6 +286,11 @@ function ChartStack({
   );
 }
 
+/**
+ * Forecast section: a stack of time-aligned charts covering the next ~48 h
+ * (water temperature, current speed + direction, tide, wind speed +
+ * direction). Re-renders on a units or scrub change.
+ */
 export function ForecastCharts(props: ForecastChartsProps) {
   return (
     <section className={styles.section} aria-label="48-hour forecast">

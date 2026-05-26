@@ -1,4 +1,23 @@
 ---
+/**
+ * Root HTML shell for every page.
+ *
+ * Responsibilities, in order:
+ *  1. Inline the Geist + Geist Mono variable fonts and the global CSS so the
+ *     first paint already has the right typography (no FOUT).
+ *  2. Render the document <head> with title/description + Open Graph metadata.
+ *     The OG image is rendered by `netlify/edge-functions/og.tsx` at `/og.png`.
+ *  3. Apply the saved theme synchronously via the inline `is:inline` script
+ *     reading the `gs-theme` cookie. Pages are prerendered, so middleware can't
+ *     do this -- the inline script is what avoids a light-on-dark flash.
+ *  4. Preload `/dashboard.json` so the browser is already fetching it before
+ *     the Dashboard island's JS has parsed.
+ *  5. Inject Plausible analytics (queued via shim so `plausible(...)` calls
+ *     never lose events) when `PUBLIC_PLAUSIBLE_SCRIPT_ID` is set. Both tags
+ *     are skipped in local dev / preview builds so they don't 404.
+ *
+ * The body is a single `<slot />` -- pages own their own structure.
+ */
 import "@fontsource-variable/geist/index.css";
 import "@fontsource-variable/geist-mono/index.css";
 import "@/styles/globals.css";

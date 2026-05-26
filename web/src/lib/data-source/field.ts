@@ -2,6 +2,17 @@ import { env } from "@/lib/env";
 import { FieldFeedSchema, type FieldFeed } from "@/lib/schema";
 import { readRaw } from "./raw";
 
+/**
+ * Status of the field (map) feed for the current request.
+ *
+ * - `ok`: feed loaded and validated.
+ * - `unconfigured`: `GOODSPEED_FIELD_FEED_URL` is unset -- the map is hidden
+ *   without an apology because the operator opted out of the feature.
+ * - `failed`: URL configured but the fetch / parse failed -- the dashboard
+ *   shows a "map unavailable" notice so it is clear the feature is broken,
+ *   not missing.
+ * - `loading`: only set client-side while the browser is fetching a refresh.
+ */
 export type FieldStatus = "ok" | "unconfigured" | "failed" | "loading";
 
 export interface FieldFeedResult {

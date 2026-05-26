@@ -65,6 +65,13 @@ export function MapTimeAxis(props: MapTimeAxisProps) {
   );
 }
 
+/**
+ * Inner strip rendered once `<ParentSize>` has measured a non-zero width.
+ * Owns the SVG axis, the "Now" marker, and the hover crosshair + label.
+ * Pointer / touch / keyboard input is wired into the shared `ScrubContext`
+ * via the same hooks the chart stack uses, so all three surfaces stay in
+ * sync.
+ */
 function Inner({
   width,
   pointTimes,

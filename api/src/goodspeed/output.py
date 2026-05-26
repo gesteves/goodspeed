@@ -87,6 +87,11 @@ MODEL_NOTES = (
 
 
 def current_speed_ms(u: np.ndarray, v: np.ndarray) -> np.ndarray:
+    """Magnitude of the (u, v) current vector in m/s.
+
+    Reused for wind speed too — the formula is the same; only the input vector
+    differs.
+    """
     return np.sqrt(u * u + v * v)
 
 
@@ -101,14 +106,17 @@ def wind_bearing_deg(uwind: np.ndarray, vwind: np.ndarray) -> np.ndarray:
 
 
 def c_to_f(c: float | np.ndarray) -> float | np.ndarray:
+    """Celsius → Fahrenheit. Works on scalars and numpy arrays."""
     return c * 9.0 / 5.0 + 32.0
 
 
 def ms_to_kt(ms: float | np.ndarray) -> float | np.ndarray:
+    """Meters per second → knots."""
     return ms * 1.943844
 
 
 def m_to_ft(m: float | np.ndarray) -> float | np.ndarray:
+    """Meters → feet."""
     return m * 3.28084
 
 
@@ -153,6 +161,12 @@ def _derive_current_fields(
 
 
 def _series_to_points(series: StationSeries, source: str) -> list[dict[str, Any]]:
+    """Convert a ``StationSeries`` into the per-timestep dicts the JSON feed carries.
+
+    ``source`` is tagged on each point as ``"nowcast"`` or ``"forecast"`` so the
+    web dashboard can mark the boundary between observed-ish and predicted
+    values.
+    """
     u, v = series.u_ms, series.v_ms
     uw, vw = series.uwind_ms, series.vwind_ms
     derived = _derive_current_fields(series.temp_c, u, v)
@@ -263,6 +277,7 @@ def validate_against_schema(feed: dict[str, Any]) -> None:
 
 
 def serialize(feed: dict[str, Any]) -> bytes:
+    """JSON-encode the feed compactly as UTF-8 bytes, ready for atomic write."""
     return json.dumps(feed, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
 
 
@@ -356,6 +371,7 @@ def build_field_feed(
 
 
 def validate_field_against_schema(feed: dict[str, Any]) -> None:
+    """Raise ``jsonschema.ValidationError`` if ``feed`` does not match the field schema."""
     _validator_for(FIELD_SCHEMA_FILENAME).validate(feed)
 
 

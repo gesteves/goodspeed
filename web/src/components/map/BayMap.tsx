@@ -101,6 +101,24 @@ function pickStyle(theme: "system" | "light" | "dark"): string {
     : LIGHT_STYLE;
 }
 
+/**
+ * Bay map: a Mapbox basemap overlaid with current arrows coloured by water
+ * temperature, plus race start ring + finish marker.
+ *
+ * The map itself is static (no user interaction) -- it follows the active
+ * field frame (driven by `nowFieldIndex` or, when scrubbed, the chart
+ * `hoveredIndex`). Re-projected positions for every grid point and the two
+ * race markers come from {@link useMapPositions}. The mounted Mapbox
+ * instance is reused across theme changes via `setStyle`.
+ *
+ * Lazy-loaded by `BayMapSection` so Mapbox GL stays out of the initial bundle
+ * and never imports server-side (Mapbox touches `window` at import time).
+ *
+ * Visual parity caveat: any change here to color stops / projection / view
+ * extent must be ported to `netlify/edge-functions/og.tsx` (the OG share
+ * image) too. Arrow-shape constants are imported from `map-constants.ts` so
+ * they stay in sync automatically.
+ */
 export function BayMap({ field, nowFieldIndex, pointTimes }: BayMapProps) {
   const [container, setContainer] = useState<HTMLDivElement | null>(null);
   const [map, setMap] = useState<mapboxgl.Map | null>(null);
@@ -364,6 +382,11 @@ export function BayMap({ field, nowFieldIndex, pointTimes }: BayMapProps) {
   );
 }
 
+/**
+ * Finish marker -- the Font Awesome "location-crosshairs" glyph centred on
+ * (x, y). The icon path is pulled from the FA SVG core at import time so we
+ * can render it inline in the same overlay SVG as the arrows.
+ */
 function FinishMarker({
   x,
   y,
@@ -384,6 +407,12 @@ function FinishMarker({
   );
 }
 
+/**
+ * A single current arrow at one grid point. Coloured by `tempC` against the
+ * shared temperature ramp; arrow length scales with `speedKt`. Below
+ * `SLACK_SPEED_KT` we draw a small hollow circle instead -- a tiny arrow is
+ * indistinguishable from a dot but pretends to have a direction.
+ */
 function Arrow({
   x,
   y,

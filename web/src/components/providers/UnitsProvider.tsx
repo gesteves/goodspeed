@@ -49,6 +49,11 @@ export function UnitsProvider({
   );
 }
 
+/**
+ * Read the active unit system from the nearest {@link UnitsProvider}. Throws
+ * when used outside one, which means a component was rendered outside the
+ * Dashboard island -- always a bug.
+ */
 export function useUnits(): UnitsContextValue {
   const ctx = useContext(UnitsContext);
   if (!ctx) throw new Error("useUnits must be used within a UnitsProvider");

@@ -1,11 +1,16 @@
 ---
+/**
+ * Root page (`/`). Renders the prerendered HTML shell + footer and mounts the
+ * Dashboard React island with `client:load`.
+ *
+ * Prerender = true: the shell is fully static so Netlify can serve it straight
+ * from the CDN. The island fetches `/dashboard.json` on hydration to fill the
+ * skeletons, so TTFB is decoupled from the SSR function's cold start and the
+ * upstream NOAA fetch.
+ */
 import Layout from "@/layouts/Layout.astro";
 import { Dashboard } from "@/components/Dashboard";
 
-// The HTML shell is fully static: the Dashboard island renders skeletons at
-// build time (via `client:load`) and fetches `/dashboard.json` on hydration.
-// Serving the shell from Netlify's CDN keeps TTFB independent of the SSR
-// function's cold start and the upstream feed fetch.
 export const prerender = true;
 ---
 

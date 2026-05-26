@@ -19,6 +19,11 @@ export interface ChartScales {
   times: Date[];
 }
 
+/**
+ * Props for {@link TimeSeriesChart}. The chart is generic over the
+ * timeseries field via `accessor`; ForecastCharts wires up one of these per
+ * metric (water temp, current, tide, wind).
+ */
 export interface TimeSeriesChartProps {
   data: TimeseriesPoint[];
   times: Date[];
@@ -47,6 +52,17 @@ const tickLabelProps = {
   fontFamily: "inherit",
 } as const;
 
+/**
+ * A single visx line chart with the dashboard's shared crosshair scrub and
+ * "now" vertical line. The y scale is auto-fit to `data` (padded by
+ * `yPadFactor`); the x scale is shared across stacked charts so they all align
+ * to the same timeline.
+ *
+ * `children(scales)` is a render prop for marks that need access to both
+ * scales -- tide markers, regime bands, etc. Hovering or touching anywhere on
+ * the chart broadcasts the hovered index via {@link useScrub}, so every
+ * stacked chart shows the crosshair at the same time.
+ */
 export function TimeSeriesChart({
   data,
   times,

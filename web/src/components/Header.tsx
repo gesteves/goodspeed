@@ -21,6 +21,12 @@ const STATUS_ICONS: Record<Freshness, typeof faSignalStream> = {
   offline: faSignalStreamSlash,
 };
 
+/**
+ * Top of the dashboard: title, units/theme toggles, and the "forecast updated
+ * X ago / next update in Y" status pill. The status icon is a slashed antenna
+ * when `staleness.status === "offline"` so a long NOAA outage is visually
+ * obvious without reading the timestamps.
+ */
 export function Header({
   feed,
   staleness,

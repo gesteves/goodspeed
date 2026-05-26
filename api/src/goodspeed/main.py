@@ -324,6 +324,13 @@ def serve(out_dir: Path | None = None) -> int:
 
 
 def _safe_run(out_dir: Path) -> None:
+    """Wrap :func:`run_once` for the scheduler: log + Bugsnag on any failure.
+
+    The scheduler thread must never propagate exceptions back to APScheduler
+    (it would unhealthy the job and stop firing); instead, both a non-zero
+    return code and a raised exception are reported via :mod:`notify` and
+    swallowed so the next cron fire still runs.
+    """
     try:
         rc = run_once(out_dir=out_dir)
         if rc != 0:
@@ -338,6 +345,12 @@ def _safe_run(out_dir: Path) -> None:
 
 
 def cli(argv: list[str] | None = None) -> int:
+    """Parse argv and dispatch to :func:`run_once` (``run``) or :func:`serve` (``serve``).
+
+    ``argv=None`` reads from ``sys.argv`` (the normal entrypoint); tests pass an
+    explicit list. Returns the process exit code; ``__main__`` forwards it to
+    ``sys.exit``.
+    """
     parser = argparse.ArgumentParser(prog="goodspeed")
     parser.add_argument(
         "--log-level",

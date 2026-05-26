@@ -148,6 +148,11 @@ export function Dashboard({ initialData }: Props) {
   );
 }
 
+/**
+ * Loading state shown before `/dashboard.json` resolves (and as a fallback
+ * for the prerendered shell). Mirrors the live layout so the layout doesn't
+ * jump when real data arrives.
+ */
 function DashboardSkeleton() {
   return (
     <>
@@ -173,6 +178,11 @@ function DashboardSkeleton() {
   );
 }
 
+/**
+ * The live dashboard body. Pure: every derivation is recomputed from
+ * `data` + `nowMs`, so a `setNowMs` tick alone refreshes "now" without
+ * re-fetching.
+ */
 function DashboardContent({
   data,
   nowMs,

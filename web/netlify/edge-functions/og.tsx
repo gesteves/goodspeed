@@ -1,4 +1,28 @@
 /** @jsxImportSource https://esm.sh/react@18.2.0 */
+/**
+ * Netlify Edge Function that renders the Open Graph share image served at
+ * `/og.png`. Each request paints:
+ *
+ *  1. A Mapbox Static Images basemap centred on the bay map's geographic
+ *     center (same `center` the dashboard reads from the field feed).
+ *  2. SVG current arrows over the in-water grid points of the most recent
+ *     frame, coloured by water temperature against the same ramp as
+ *     `lib/colors.ts` (anchors converted to sRGB offline; interpolated in
+ *     sRGB here for speed).
+ *
+ * The runtime is Deno (Netlify Edge), so this file cannot import the Astro
+ * `@/lib/*` modules -- React, Zod, and og_edge all come from `esm.sh`/`deno`
+ * URLs, and arrow-geometry constants are imported from
+ * `src/lib/map-constants.ts` because that file is pure (no other imports).
+ *
+ * Color stops, the projection math, and the view extent are intentionally
+ * duplicated from the dashboard map; the CLAUDE.md note about porting any
+ * visual change here lives there as a reminder.
+ *
+ * Cache headers: short browser TTL (60s) so a missed cycle isn't pinned, but
+ * a 1-hour edge cache with a 24-hour stale-while-revalidate window so most
+ * social-card crawlers and re-fetches hit the CDN rather than the live edge.
+ */
 import React from "https://esm.sh/react@18.2.0";
 import { ImageResponse } from "https://deno.land/x/og_edge/mod.ts";
 import { z } from "https://esm.sh/zod@3.23.8";
