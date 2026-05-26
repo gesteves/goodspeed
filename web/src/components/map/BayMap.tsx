@@ -339,7 +339,7 @@ export function BayMap({ field, nowFieldIndex, pointTimes }: BayMapProps) {
                     dominantBaseline="middle"
                     className={styles.markerLabel}
                   >
-                    Start zone
+                    Swim start
                   </text>
                 </>
               );
