@@ -42,7 +42,7 @@ export function Header({
         className={styles.status}
         title={
           staleness.status === "offline"
-            ? "The model hasn't updated in over a day — data may be unreliable"
+            ? "The forecast hasn't updated in over a day — data may be unreliable"
             : staleness.status === "stale"
               ? "The forecast data is older than usual"
               : undefined
@@ -54,7 +54,7 @@ export function Header({
           aria-hidden="true"
         />
         <span className={styles.statusText}>
-          Model updated{" "}
+          Forecast updated{" "}
           <span title={formatDateTime(feed.model.fetched_at)}>
             {formatRelative(feed.model.fetched_at)}
           </span>
