@@ -1,7 +1,6 @@
 import {
-  faCircleDot,
-  faCircleExclamation,
-  faCircleXmark,
+  faSignalStream,
+  faSignalStreamSlash,
 } from "@fortawesome/pro-regular-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { STATION_URL } from "@/lib/constants";
@@ -16,10 +15,10 @@ import styles from "./Header.module.css";
 import { ThemeToggle } from "./ThemeToggle";
 import { UnitsToggle } from "./UnitsToggle";
 
-const STATUS_ICONS: Record<Freshness, typeof faCircleDot> = {
-  fresh: faCircleDot,
-  stale: faCircleExclamation,
-  offline: faCircleXmark,
+const STATUS_ICONS: Record<Freshness, typeof faSignalStream> = {
+  fresh: faSignalStream,
+  stale: faSignalStream,
+  offline: faSignalStreamSlash,
 };
 
 export function Header({
@@ -120,7 +119,7 @@ export function HeaderSkeleton() {
 
       <div className={styles.status} aria-live="polite">
         <FontAwesomeIcon
-          icon={faCircleDot}
+          icon={faSignalStream}
           className={styles.statusIcon}
           aria-hidden="true"
         />
