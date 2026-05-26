@@ -36,10 +36,10 @@
   /* Charts */
   --chart-grid: #e4e9ed;
   --chart-axis: #9aa8b2;
-  --chart-temp: #e8762b;
-  --chart-current: #0a6ebd;
+  --chart-temp: #0a6ebd;
+  --chart-current: #7a5cc4;
   --chart-tide: #1f9d8b;
-  --chart-wind: #7a5cc4;
+  --chart-wind: #e8762b;
   --chart-nowcast-band: rgba(15, 27, 36, 0.05);
   --chart-now-line: #0f1b24;
 
@@ -75,10 +75,10 @@
 
     --chart-grid: #243039;
     --chart-axis: #5b6b76;
-    --chart-temp: #f0915a;
-    --chart-current: #4aa3e0;
+    --chart-temp: #4aa3e0;
+    --chart-current: #a78bdf;
     --chart-tide: #3fc9b3;
-    --chart-wind: #a78bdf;
+    --chart-wind: #f0915a;
     --chart-nowcast-band: rgba(231, 238, 243, 0.06);
     --chart-now-line: #e7eef3;
 
@@ -111,10 +111,10 @@
 
   --chart-grid: #243039;
   --chart-axis: #5b6b76;
-  --chart-temp: #f0915a;
-  --chart-current: #4aa3e0;
+  --chart-temp: #4aa3e0;
+  --chart-current: #a78bdf;
   --chart-tide: #3fc9b3;
-  --chart-wind: #a78bdf;
+  --chart-wind: #f0915a;
   --chart-nowcast-band: rgba(231, 238, 243, 0.06);
   --chart-now-line: #e7eef3;
 
