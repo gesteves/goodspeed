@@ -9,14 +9,22 @@
   border: 1px solid var(--border);
   border-top-width: 0;
   border-radius: 0 0 var(--radius) var(--radius);
+}
+
+/* Interactive layer sits inside `.strip` so the visual frame survives the
+   loading / placeholder branches. Focus moves to this layer, but the visible
+   focus ring is delegated to the outer `.strip` via :focus-within so the
+   ring wraps the entire strip including its top padding. */
+.surface {
+  width: 100%;
   /* Same touch-action handling as the chart stack: vertical scroll stays
      with the page; horizontal motion is reserved for scrubbing. */
   touch-action: pan-y;
   outline: none;
-  cursor: ew-resize;
+  cursor: crosshair;
 }
 
-.strip:focus-visible {
+.strip:focus-within {
   outline: 2px solid var(--focus, currentColor);
   outline-offset: 0;
 }
@@ -26,18 +34,27 @@
 }
 
 .placeholder {
-  height: 66px;
+  height: 60px;
 }
 
-.baseline {
-  stroke: var(--chart-axis);
-  stroke-width: 1;
+@media (max-width: 640px) {
+  .placeholder {
+    height: 80px;
+  }
 }
 
 .nowLine {
   stroke: var(--chart-now-line);
   stroke-width: 1.5;
   opacity: 0.55;
+}
+
+.nowLabel {
+  fill: var(--text-muted);
+  font-size: 11px;
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
 }
 
 .crosshair {

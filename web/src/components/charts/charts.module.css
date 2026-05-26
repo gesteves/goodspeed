@@ -51,6 +51,7 @@
      motion for chart scrubbing. Set on this HTML wrapper because iOS
      Safari only reliably honours touch-action on HTML elements. */
   touch-action: pan-y;
+  cursor: crosshair;
 }
 
 .chartHead {
