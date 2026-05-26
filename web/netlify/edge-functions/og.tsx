@@ -332,7 +332,7 @@ export default async function handler(_req: Request): Promise<Response> {
           opacity={0.55}
         />
         {(() => {
-          const s = 28 / FINISH_ICON.height;
+          const s = 23 / FINISH_ICON.height;
           return (
             <g
               opacity={0.55}

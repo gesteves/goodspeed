@@ -369,7 +369,7 @@ function FinishMarker({
   y: number;
   scale: number;
 }) {
-  const s = (22 * scale) / FINISH_ICON.height;
+  const s = (18 * scale) / FINISH_ICON.height;
   return (
     <g
       transform={`translate(${x} ${y}) scale(${s}) translate(${-FINISH_ICON.width / 2} ${-FINISH_ICON.height / 2})`}
