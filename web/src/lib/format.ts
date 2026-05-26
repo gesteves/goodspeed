@@ -26,6 +26,11 @@ export function formatClock(value: string | number | Date): string {
   return safeFormat(value, "h:mm a");
 }
 
+/** "3:00 PM PDT" */
+export function formatClockWithZone(value: string | number | Date): string {
+  return safeFormat(value, "h:mm a zzz");
+}
+
 /** "Fri 3:00 PM" */
 export function formatDayClock(value: string | number | Date): string {
   return safeFormat(value, "EEE h:mm a");

@@ -11,7 +11,7 @@ import {
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { compass8Word } from "@/lib/angles";
 import type { TideEvent } from "@/lib/derive/tides";
-import { formatClock, formatNumber } from "@/lib/format";
+import { formatClock, formatClockWithZone, formatNumber } from "@/lib/format";
 import type { TimeseriesPoint } from "@/lib/schema";
 import { METRICS, readMetric, unitField } from "@/lib/units/units";
 import { useUnits } from "../providers/UnitsProvider";
@@ -159,7 +159,7 @@ export function NowPanel({
     <section className={styles.panel} aria-label="Current conditions">
       <div className={styles.panelHead}>
         <h2 className={styles.panelTitle}>Right now</h2>
-        <span className={styles.panelTime}>{formatClock(now)}</span>
+        <span className={styles.panelTime}>{formatClockWithZone(now)}</span>
       </div>
 
       <div className={styles.grid}>
