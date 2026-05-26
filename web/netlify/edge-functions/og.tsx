@@ -227,12 +227,6 @@ export default async function handler(_req: Request): Promise<Response> {
     Math.hypot(startEdgePx.x - startPx.x, startEdgePx.y - startPx.y),
     36,
   );
-  const dx = finishPx.x - startPx.x;
-  const dy = finishPx.y - startPx.y;
-  const axLen = Math.hypot(dx, dy) || 1;
-  const ux = dx / axLen;
-  const uy = dy / axLen;
-
   // The schema enforces .min(1) on each array but not parity across them. If a
   // malformed feed has shorter frame arrays than the grid, fall back to a
   // basemap-only image instead of letting an `undefined` reach the SVG
@@ -316,10 +310,10 @@ export default async function handler(_req: Request): Promise<Response> {
           <linearGradient
             id="og-startRing"
             gradientUnits="userSpaceOnUse"
-            x1={startPx.x - startRadiusPx * ux}
-            y1={startPx.y - startRadiusPx * uy}
-            x2={startPx.x + startRadiusPx * ux}
-            y2={startPx.y + startRadiusPx * uy}
+            x1={startPx.x}
+            y1={startPx.y - startRadiusPx}
+            x2={startPx.x}
+            y2={startPx.y + startRadiusPx}
           >
             <stop offset="0%" stopColor={MARKER_COLOR} stopOpacity="0" />
             <stop offset="50%" stopColor={MARKER_COLOR} stopOpacity="0" />

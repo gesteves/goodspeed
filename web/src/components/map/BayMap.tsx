@@ -299,19 +299,8 @@ export function BayMap({ field, nowFieldIndex, pointTimes }: BayMapProps) {
           })}
           {startPx &&
             startRadiusPx > 0 &&
-            finishPx &&
             (() => {
               const r = Math.max(startRadiusPx, 36 * arrowScale);
-              // Unit vector from the ring centre toward the finish (projected
-              // pixel space). Reused for both the gradient axis and the
-              // label anchor on the SW edge of the ring.
-              const dx = finishPx.x - startPx.x;
-              const dy = finishPx.y - startPx.y;
-              const len = Math.hypot(dx, dy) || 1;
-              const ux = dx / len;
-              const uy = dy / len;
-              // Label sits centered below the ring -- simple and reliable
-              // regardless of where the start/finish bearing points.
               const labelX = startPx.x;
               const labelY = startPx.y + r + 14;
               return (
@@ -320,13 +309,13 @@ export function BayMap({ field, nowFieldIndex, pointTimes }: BayMapProps) {
                     <linearGradient
                       id="bayMap-startRing"
                       gradientUnits="userSpaceOnUse"
-                      x1={startPx.x - r * ux}
-                      y1={startPx.y - r * uy}
-                      x2={startPx.x + r * ux}
-                      y2={startPx.y + r * uy}
+                      x1={startPx.x}
+                      y1={startPx.y - r}
+                      x2={startPx.x}
+                      y2={startPx.y + r}
                     >
                       <stop offset="0%" stopColor="var(--text)" stopOpacity="0" />
-                      <stop offset="50%" stopColor="var(--text)" stopOpacity="0" />
+                      <stop offset="40%" stopColor="var(--text)" stopOpacity="0" />
                       <stop offset="100%" stopColor="var(--text)" stopOpacity="1" />
                     </linearGradient>
                   </defs>
