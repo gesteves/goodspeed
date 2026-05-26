@@ -4,7 +4,7 @@
 
 A live dashboard showing forecast conditions in San Francisco Bay at station [SFB1204](https://tidesandcurrents.noaa.gov/ofs/ofs_station.html?stname=SW%20of%20AI&ofs=sfb&stnid=SFB1204&subdomain=en) (SW of Alcatraz Island) based on the hydrodynamic model provided by the National Oceanic and Atmospheric Administration’s San Francisco Bay Operational Forecast System. See it live at https://alcatraz.giventotri.com/
 
-<img width="1830" height="1896" alt="image" src="https://github.com/user-attachments/assets/28b52c8b-435f-43e5-b85c-64ff268265f0" />
+<img width="1858" height="2024" alt="image" src="https://github.com/user-attachments/assets/ff3288f4-d04a-48d2-93db-8ed2bbb9e083" />
 
 Goodspeed consists of two separate apps:
 
