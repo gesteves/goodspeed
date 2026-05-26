@@ -1,3 +1,4 @@
+import { faLocationCrosshairs } from "@fortawesome/pro-regular-svg-icons";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { useEffect, useMemo, useState } from "react";
@@ -11,11 +12,13 @@ import {
   ARROW_SHAFT_WIDTH,
   FINISH_LAT,
   FINISH_LON,
-  FINISH_ICON,
   SLACK_SPEED_KT,
   START_LAT,
   START_LON,
 } from "@/lib/map-constants";
+
+const [FINISH_ICON_W, FINISH_ICON_H, , , FINISH_ICON_PATH] =
+  faLocationCrosshairs.icon;
 import type { FieldFeed } from "@/lib/schema";
 import { useScrub } from "../charts/ScrubContext";
 import { useTheme } from "../providers/ThemeProvider";
@@ -369,13 +372,13 @@ function FinishMarker({
   y: number;
   scale: number;
 }) {
-  const s = (18 * scale) / FINISH_ICON.height;
+  const s = (18 * scale) / FINISH_ICON_H;
   return (
     <g
-      transform={`translate(${x} ${y}) scale(${s}) translate(${-FINISH_ICON.width / 2} ${-FINISH_ICON.height / 2})`}
+      transform={`translate(${x} ${y}) scale(${s}) translate(${-FINISH_ICON_W / 2} ${-FINISH_ICON_H / 2})`}
       className={styles.finishMarker}
     >
-      <path d={FINISH_ICON.pathData} />
+      <path d={FINISH_ICON_PATH as string} />
     </g>
   );
 }

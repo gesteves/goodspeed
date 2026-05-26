@@ -31,15 +31,3 @@ export const ARROW_SHAFT_WIDTH = 3;
 // Speed threshold (kt) below which we draw the "slack" circle marker instead
 // of an arrow.
 export const SLACK_SPEED_KT = 0.08;
-
-// Finish-marker icon. Path data is copied verbatim from
-// `@fortawesome/pro-regular-svg-icons` so the OG edge function (which runs in
-// Deno and can't resolve npm packages) doesn't need to import the icon set.
-// Re-export here keeps the constants file the single source of shared
-// geometry between BayMap and og.tsx. Currently: `faLocationCrosshairs`.
-export const FINISH_ICON = {
-  width: 576,
-  height: 512,
-  pathData:
-    "M288-16c13.3 0 24 10.7 24 24l0 25.3C416.5 44.4 499.6 127.5 510.7 232l25.3 0c13.3 0 24 10.7 24 24s-10.7 24-24 24l-25.3 0C499.6 384.5 416.5 467.6 312 478.7l0 25.3c0 13.3-10.7 24-24 24s-24-10.7-24-24l0-25.3C159.5 467.6 76.4 384.5 65.3 280L40 280c-13.3 0-24-10.7-24-24s10.7-24 24-24l25.3 0C76.4 127.5 159.5 44.4 264 33.3L264 8c0-13.3 10.7-24 24-24zM464 256a176 176 0 1 0 -352 0 176 176 0 1 0 352 0zm-112 0a64 64 0 1 0 -128 0 64 64 0 1 0 128 0zm-176 0a112 112 0 1 1 224 0 112 112 0 1 1 -224 0z",
-} as const;
