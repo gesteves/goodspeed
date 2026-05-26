@@ -305,7 +305,7 @@ export function BayMap({ field, nowFieldIndex, pointTimes }: BayMapProps) {
             (() => {
               const r = Math.max(startRadiusPx, 36 * arrowScale);
               const labelX = startPx.x;
-              const labelY = startPx.y + r + 14;
+              const labelY = startPx.y + r / 2;
               return (
                 <>
                   <defs>
@@ -336,9 +336,10 @@ export function BayMap({ field, nowFieldIndex, pointTimes }: BayMapProps) {
                     x={labelX}
                     y={labelY}
                     textAnchor="middle"
+                    dominantBaseline="middle"
                     className={styles.markerLabel}
                   >
-                    Swim start
+                    Start zone
                   </text>
                 </>
               );
