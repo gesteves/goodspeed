@@ -1,6 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { DashboardData } from "@/lib/data-source";
-import { findNowIndex, levelTrend, nearestTimeIndex } from "@/lib/derive/now";
+import {
+  findNowIndex,
+  levelTrend,
+  nearestTimeIndex,
+  tempTrend,
+} from "@/lib/derive/now";
 import { getStaleness } from "@/lib/derive/staleness";
 import { findTideExtrema, nextTideEvent } from "@/lib/derive/tides";
 import {
@@ -173,6 +178,7 @@ function DashboardContent({
     const tideEvents = findTideExtrema(ts);
     const staleness = getStaleness(feed.model.cycle, now);
     const trend = levelTrend(ts, nowIndex);
+    const tempDir = tempTrend(ts, nowIndex);
     const nextTide = nextTideEvent(tideEvents, now);
     const pointTimes = ts.map((p) => p.t);
     const nowFieldIndex = field ? nearestTimeIndex(field.t, now) : 0;
@@ -183,6 +189,7 @@ function DashboardContent({
       tideEvents,
       staleness,
       trend,
+      tempDir,
       nextTide,
       pointTimes,
       nowFieldIndex,
@@ -196,6 +203,7 @@ function DashboardContent({
         now={derived.nowIso}
         point={derived.ts[derived.nowIndex]}
         trend={derived.trend}
+        tempTrend={derived.tempDir}
         nextTide={derived.nextTide}
       />
       <ScrubProvider>

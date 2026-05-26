@@ -1,3 +1,5 @@
+import { faWater } from "@fortawesome/pro-light-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { compass8Word } from "@/lib/angles";
 import { classifyCurrent } from "@/lib/derive/currents";
 import { formatNumber } from "@/lib/format";
@@ -38,9 +40,10 @@ export function CurrentNowCard({
   return (
     <div className={styles.card}>
       <div className={styles.cardHead}>
-        <span
-          className={styles.swatch}
-          style={{ background: "var(--chart-current)" }}
+        <FontAwesomeIcon
+          icon={faWater}
+          className={styles.cardIcon}
+          style={{ color: "var(--chart-current)" }}
           aria-hidden="true"
         />
         <h3 className={styles.cardLabel}>Current</h3>

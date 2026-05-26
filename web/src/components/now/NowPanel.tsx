@@ -1,3 +1,14 @@
+import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
+import {
+  faTemperatureArrowDown,
+  faTemperatureArrowUp,
+  faTemperatureHalf,
+  faWater,
+  faWaterArrowDown,
+  faWaterArrowUp,
+  faWind,
+} from "@fortawesome/pro-light-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { compass8Word } from "@/lib/angles";
 import type { TideEvent } from "@/lib/derive/tides";
 import { formatClock, formatNumber } from "@/lib/format";
@@ -14,29 +25,61 @@ const TREND_LABEL: Record<string, string> = {
   steady: "Steady",
 };
 
+type Trend = "rising" | "falling" | "steady";
+
+const TEMP_ICON: Record<Trend, IconDefinition> = {
+  rising: faTemperatureArrowUp,
+  falling: faTemperatureArrowDown,
+  steady: faTemperatureHalf,
+};
+
+const TIDE_ICON: Record<Trend, IconDefinition> = {
+  rising: faWaterArrowUp,
+  falling: faWaterArrowDown,
+  steady: faWater,
+};
+
 export interface NowPanelProps {
   /** Current wall-clock time (ISO string), shown in the panel header. */
   now: string;
   point: TimeseriesPoint;
-  trend: "rising" | "falling" | "steady";
+  trend: Trend;
+  tempTrend: Trend;
   nextTide: TideEvent | null;
 }
 
 const SKELETON_CARDS: {
   label: string;
   shortLabel?: string;
+  icon: IconDefinition;
   accent: string;
   hasSub: boolean;
 }[] = [
   {
     label: "Water temperature",
     shortLabel: "Water temp",
+    icon: faTemperatureHalf,
     accent: "var(--chart-temp)",
     hasSub: false,
   },
-  { label: "Current", accent: "var(--chart-current)", hasSub: true },
-  { label: "Tide", accent: "var(--chart-tide)", hasSub: true },
-  { label: "Wind", accent: "var(--chart-wind)", hasSub: true },
+  {
+    label: "Current",
+    icon: faWater,
+    accent: "var(--chart-current)",
+    hasSub: true,
+  },
+  {
+    label: "Tide",
+    icon: faWaterArrowUp,
+    accent: "var(--chart-tide)",
+    hasSub: true,
+  },
+  {
+    label: "Wind",
+    icon: faWind,
+    accent: "var(--chart-wind)",
+    hasSub: true,
+  },
 ];
 
 /**
@@ -52,12 +95,13 @@ export function NowPanelSkeleton() {
       </div>
 
       <div className={styles.grid}>
-        {SKELETON_CARDS.map(({ label, shortLabel, accent, hasSub }) => (
+        {SKELETON_CARDS.map(({ label, shortLabel, icon, accent, hasSub }) => (
           <div key={label} className={styles.card}>
             <div className={styles.cardHead}>
-              <span
-                className={styles.swatch}
-                style={{ background: accent }}
+              <FontAwesomeIcon
+                icon={icon}
+                className={styles.cardIcon}
+                style={{ color: accent }}
                 aria-hidden="true"
               />
               <h3 className={styles.cardLabel}>
@@ -94,7 +138,13 @@ export function NowPanelSkeleton() {
   );
 }
 
-export function NowPanel({ now, point, trend, nextTide }: NowPanelProps) {
+export function NowPanel({
+  now,
+  point,
+  trend,
+  tempTrend,
+  nextTide,
+}: NowPanelProps) {
   const { units } = useUnits();
 
   const temp = readMetric(point, METRICS.waterTemp, units);
@@ -116,14 +166,16 @@ export function NowPanel({ now, point, trend, nextTide }: NowPanelProps) {
         <ReadingCard
           label="Water temperature"
           shortLabel="Water temp"
-          accent="var(--chart-temp)"
+          icon={TEMP_ICON[tempTrend]}
+          iconColor="var(--chart-temp)"
           value={formatNumber(temp, 1)}
           unit={unitField(METRICS.waterTemp, units).unit}
         />
         <CurrentNowCard point={point} units={units} />
         <ReadingCard
           label="Tide"
-          accent="var(--chart-tide)"
+          icon={TIDE_ICON[trend]}
+          iconColor="var(--chart-tide)"
           value={formatNumber(level, 1)}
           unit={unitField(METRICS.waterLevel, units).unit}
           sub={
@@ -135,7 +187,8 @@ export function NowPanel({ now, point, trend, nextTide }: NowPanelProps) {
         />
         <ReadingCard
           label="Wind"
-          accent="var(--chart-wind)"
+          icon={faWind}
+          iconColor="var(--chart-wind)"
           value={formatNumber(wind, 1)}
           unit={unitField(METRICS.windSpeed, units).unit}
           sub={`From the ${compass8Word(point.wind_bearing_deg)}`}

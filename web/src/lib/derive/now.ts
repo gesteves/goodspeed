@@ -41,3 +41,19 @@ export function levelTrend(
   if (delta < -0.02) return "falling";
   return "steady";
 }
+
+/** Direction the water temperature is moving around `index`. Same ±30-min
+ *  window as `levelTrend`; threshold of 0.05 °C over the hour-wide span is
+ *  roughly 2× the typical diurnal rate, so genuine trends register without
+ *  noise flickering the icon. */
+export function tempTrend(
+  ts: TimeseriesPoint[],
+  index: number,
+): "rising" | "falling" | "steady" {
+  const prev = ts[Math.max(0, index - 5)];
+  const next = ts[Math.min(ts.length - 1, index + 5)];
+  const delta = next.water_temp_c - prev.water_temp_c;
+  if (delta > 0.05) return "rising";
+  if (delta < -0.05) return "falling";
+  return "steady";
+}

@@ -53,12 +53,10 @@
   gap: 7px;
 }
 
-.swatch {
-  width: 9px;
-  height: 9px;
-  border-radius: 3px;
+.cardIcon {
   flex: none;
-  margin-top: 0.2rem;
+  font-size: 0.95rem;
+  line-height: 1;
 }
 
 .cardLabel {

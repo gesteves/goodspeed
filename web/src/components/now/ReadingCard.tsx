@@ -1,3 +1,5 @@
+import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import type { ReactNode } from "react";
 import styles from "./now.module.css";
 
@@ -5,30 +7,31 @@ import styles from "./now.module.css";
 export function ReadingCard({
   label,
   shortLabel,
+  icon,
+  iconColor,
   value,
   unit,
   sub,
-  accent,
 }: {
   label: string;
   /** Shorter label shown when the card is narrow (container <220px). */
   shortLabel?: string;
+  icon: IconDefinition;
+  /** CSS color (e.g. a `var(--chart-*)`) used to tint the label icon. */
+  iconColor?: string;
   value: string;
   unit: string;
   sub?: ReactNode;
-  /** CSS color (e.g. a `var(--chart-*)`) for the label swatch. */
-  accent?: string;
 }) {
   return (
     <div className={styles.card}>
       <div className={styles.cardHead}>
-        {accent && (
-          <span
-            className={styles.swatch}
-            style={{ background: accent }}
-            aria-hidden="true"
-          />
-        )}
+        <FontAwesomeIcon
+          icon={icon}
+          className={styles.cardIcon}
+          style={iconColor ? { color: iconColor } : undefined}
+          aria-hidden="true"
+        />
         <h3 className={styles.cardLabel}>
           {shortLabel ? (
             <>
