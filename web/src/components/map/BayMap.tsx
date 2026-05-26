@@ -11,6 +11,7 @@ import {
   ARROW_SHAFT_WIDTH,
   FINISH_LAT,
   FINISH_LON,
+  FINISH_ICON,
   SLACK_SPEED_KT,
   START_LAT,
   START_LON,
@@ -352,10 +353,10 @@ export function BayMap({ field, nowFieldIndex, pointTimes }: BayMapProps) {
             })()}
           {finishPx && (
             <>
-              <FinishBullseye x={finishPx.x} y={finishPx.y} scale={arrowScale} />
+              <FinishMarker x={finishPx.x} y={finishPx.y} scale={arrowScale} />
               <text
                 x={finishPx.x}
-                y={finishPx.y - 14 * arrowScale}
+                y={finishPx.y - 17 * arrowScale}
                 textAnchor="middle"
                 className={styles.markerLabel}
               >
@@ -370,7 +371,7 @@ export function BayMap({ field, nowFieldIndex, pointTimes }: BayMapProps) {
   );
 }
 
-function FinishBullseye({
+function FinishMarker({
   x,
   y,
   scale,
@@ -379,11 +380,13 @@ function FinishBullseye({
   y: number;
   scale: number;
 }) {
+  const s = (22 * scale) / FINISH_ICON.height;
   return (
-    <g transform={`translate(${x} ${y})`} className={styles.finishBullseye}>
-      <circle cx={0} cy={0} r={8 * scale} fill="none" strokeWidth={1.5 * scale} />
-      <circle cx={0} cy={0} r={5 * scale} fill="none" strokeWidth={1.2 * scale} />
-      <circle cx={0} cy={0} r={2 * scale} className={styles.finishBullseyeCenter} />
+    <g
+      transform={`translate(${x} ${y}) scale(${s}) translate(${-FINISH_ICON.width / 2} ${-FINISH_ICON.height / 2})`}
+      className={styles.finishMarker}
+    >
+      <path d={FINISH_ICON.pathData} />
     </g>
   );
 }

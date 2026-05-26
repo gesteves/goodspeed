@@ -10,6 +10,7 @@ import {
   ARROW_SHAFT_WIDTH,
   FINISH_LAT,
   FINISH_LON,
+  FINISH_ICON,
   SLACK_SPEED_KT,
   START_LAT,
   START_LON,
@@ -336,30 +337,17 @@ export default async function handler(_req: Request): Promise<Response> {
           strokeDasharray="5 4"
           opacity={0.55}
         />
-        <g opacity={0.55}>
-          <circle
-            cx={finishPx.x}
-            cy={finishPx.y}
-            r={8}
-            fill="none"
-            stroke={MARKER_COLOR}
-            strokeWidth={1.5}
-          />
-          <circle
-            cx={finishPx.x}
-            cy={finishPx.y}
-            r={5}
-            fill="none"
-            stroke={MARKER_COLOR}
-            strokeWidth={1.2}
-          />
-          <circle
-            cx={finishPx.x}
-            cy={finishPx.y}
-            r={2}
-            fill={MARKER_COLOR}
-          />
-        </g>
+        {(() => {
+          const s = 28 / FINISH_ICON.height;
+          return (
+            <g
+              opacity={0.55}
+              transform={`translate(${finishPx.x} ${finishPx.y}) scale(${s}) translate(${-FINISH_ICON.width / 2} ${-FINISH_ICON.height / 2})`}
+            >
+              <path d={FINISH_ICON.pathData} fill={MARKER_COLOR} />
+            </g>
+          );
+        })()}
       </svg>
     </div>
   );

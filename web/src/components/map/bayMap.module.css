@@ -65,19 +65,11 @@
   stroke-linejoin: round;
 }
 
-/* Finish marker -- bullseye at St. Francis Yacht Club. Matches the start
-   ring's tone (--text @ 0.55 opacity) so the two markers read as a set. */
-.finishBullseye {
+/* Finish marker at St. Francis Yacht Club. Matches the start ring's tone
+   (--text @ 0.55 opacity) so the two markers read as a set. */
+.finishMarker {
   opacity: 0.55;
-}
-
-.finishBullseye circle {
-  stroke: var(--text);
-}
-
-.finishBullseyeCenter {
   fill: var(--text);
-  stroke: none;
 }
 
 /* The map is fully static (panning/zooming disabled), so suppress Mapbox's
