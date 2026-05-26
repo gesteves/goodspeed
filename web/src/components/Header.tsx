@@ -1,10 +1,26 @@
+import {
+  faCircleDot,
+  faCircleExclamation,
+  faCircleXmark,
+} from "@fortawesome/pro-regular-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { STATION_URL } from "@/lib/constants";
-import { nextCycleAt, type Staleness } from "@/lib/derive/staleness";
+import {
+  type Freshness,
+  nextCycleAt,
+  type Staleness,
+} from "@/lib/derive/staleness";
 import { formatDateTime, formatRelative } from "@/lib/format";
 import type { Feed } from "@/lib/schema";
 import styles from "./Header.module.css";
 import { ThemeToggle } from "./ThemeToggle";
 import { UnitsToggle } from "./UnitsToggle";
+
+const STATUS_ICONS: Record<Freshness, typeof faCircleDot> = {
+  fresh: faCircleDot,
+  stale: faCircleExclamation,
+  offline: faCircleXmark,
+};
 
 export function Header({
   feed,
@@ -48,8 +64,9 @@ export function Header({
               : undefined
         }
       >
-        <span
-          className={styles.dot}
+        <FontAwesomeIcon
+          icon={STATUS_ICONS[staleness.status]}
+          className={styles.statusIcon}
           data-status={staleness.status}
           aria-hidden="true"
         />
@@ -102,7 +119,11 @@ export function HeaderSkeleton() {
       </div>
 
       <div className={styles.status} aria-live="polite">
-        <span className={styles.dot} aria-hidden="true" />
+        <FontAwesomeIcon
+          icon={faCircleDot}
+          className={styles.statusIcon}
+          aria-hidden="true"
+        />
         <span className={styles.statusText}>Loading conditions…</span>
       </div>
     </header>

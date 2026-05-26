@@ -76,24 +76,25 @@
   color: var(--text-muted);
 }
 
-.dot {
+.statusIcon {
   grid-column: 1;
   grid-row: 1 / 3;
   align-self: center;
-  width: 9px;
-  height: 9px;
+  width: 13px;
+  height: 13px;
   flex: none;
-  border-radius: 50%;
-  background: var(--live);
+  color: var(--live);
   animation: statusBlink 1.6s ease-in-out infinite;
 }
 
-.dot[data-status="stale"] {
-  background: var(--warn);
+.statusIcon[data-status="stale"] {
+  color: var(--warn);
+  animation: none;
 }
 
-.dot[data-status="offline"] {
-  background: var(--offline);
+.statusIcon[data-status="offline"] {
+  color: var(--offline);
+  animation: none;
 }
 
 @keyframes statusBlink {
@@ -107,7 +108,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .dot {
+  .statusIcon {
     animation: none;
   }
 }
@@ -130,7 +131,7 @@
 
   .statusText,
   .statusNext,
-  .dot {
+  .statusIcon {
     grid-column: auto;
     grid-row: auto;
   }
