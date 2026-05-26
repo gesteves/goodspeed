@@ -1,6 +1,17 @@
-/* The section's aspect-ratio is set inline from the field grid's extent so
-   the map fills the container with no blank margins on the sides. */
+/* Section wraps the map box + the time-axis strip beneath it as a single
+   visual unit. The map's aspect ratio sits on `.mapBox` (the inner div),
+   not the section, so the strip can flow naturally underneath. */
 .section {
+  position: relative;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* The mapBox's aspect-ratio is set inline from the field grid's extent so
+   the map fills the container with no blank margins on the sides. */
+.mapBox {
   position: relative;
   width: 100%;
 }

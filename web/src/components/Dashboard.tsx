@@ -156,6 +156,7 @@ function DashboardSkeleton() {
         fieldStatus="loading"
         nowFieldIndex={0}
         pointTimes={[]}
+        nowIndex={0}
       />
       <ForecastChartsSkeleton />
     </>
@@ -212,6 +213,7 @@ function DashboardContent({
           fieldStatus={fieldStatus}
           nowFieldIndex={derived.nowFieldIndex}
           pointTimes={derived.pointTimes}
+          nowIndex={derived.nowIndex}
         />
         <ForecastCharts
           data={derived.ts}

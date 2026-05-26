@@ -1,5 +1,5 @@
 import { ParentSize } from "@visx/responsive";
-import { useMemo, type KeyboardEvent } from "react";
+import { useMemo } from "react";
 import { compass16 } from "@/lib/angles";
 import { classifyCurrent } from "@/lib/derive/currents";
 import type { TideEvent } from "@/lib/derive/tides";
@@ -17,14 +17,9 @@ import { ArrowTimeline } from "./ArrowTimeline";
 import styles from "./charts.module.css";
 import { CHART_MARGIN, makeTimeScale } from "./scales";
 import { useScrub } from "./ScrubContext";
+import { useScrubKeyboard } from "./useScrubKeyboard";
 import { TideMarkers } from "./TideMarkers";
 import { TimeSeriesChart } from "./TimeSeriesChart";
-
-// Keyboard scrub step. SFBOFS publishes points every 6 minutes, so one step is
-// one sample; Shift+Arrow jumps an hour. Home/End jump to the series ends;
-// Escape releases the scrub back to "Now".
-const SCRUB_STEP_NORMAL = 1;
-const SCRUB_STEP_SHIFT = 10;
 
 export interface ForecastChartsProps {
   data: TimeseriesPoint[];
@@ -126,32 +121,13 @@ function ChartStack({
   tideEvents,
 }: ForecastChartsProps & { width: number }) {
   const { units } = useUnits();
-  const { hoveredIndex, setHoveredIndex } = useScrub();
+  const { hoveredIndex } = useScrub();
   const lastIndex = data.length - 1;
 
   // Keyboard scrub: arrow keys move the shared scrub index across the stack.
   // The container is focusable (tabIndex=0) and has an aria-label describing
   // the controls; readouts have aria-live="polite" so updates are announced.
-  const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
-    const current = hoveredIndex ?? nowIndex;
-    const step = e.shiftKey ? SCRUB_STEP_SHIFT : SCRUB_STEP_NORMAL;
-    if (e.key === "ArrowLeft") {
-      setHoveredIndex(Math.max(0, current - step));
-      e.preventDefault();
-    } else if (e.key === "ArrowRight") {
-      setHoveredIndex(Math.min(lastIndex, current + step));
-      e.preventDefault();
-    } else if (e.key === "Home") {
-      setHoveredIndex(0);
-      e.preventDefault();
-    } else if (e.key === "End") {
-      setHoveredIndex(lastIndex);
-      e.preventDefault();
-    } else if (e.key === "Escape") {
-      setHoveredIndex(null);
-      e.preventDefault();
-    }
-  };
+  const onKeyDown = useScrubKeyboard(nowIndex, lastIndex);
 
   const times = useMemo(() => data.map((p) => new Date(p.t)), [data]);
 
