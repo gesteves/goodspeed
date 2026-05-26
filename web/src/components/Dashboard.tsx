@@ -17,8 +17,10 @@ import {
   type Theme,
 } from "@/lib/preferences";
 import { DEFAULT_UNIT_SYSTEM } from "@/lib/units/units";
+import chartStyles from "./charts/charts.module.css";
 import { ForecastCharts, ForecastChartsSkeleton } from "./charts/ForecastCharts";
 import { ScrubProvider } from "./charts/ScrubContext";
+import dashboardStyles from "./Dashboard.module.css";
 import { DashboardErrorBoundary } from "./DashboardErrorBoundary";
 import { Header, HeaderSkeleton } from "./Header";
 import { BayMapSection } from "./map/BayMapSection";
@@ -151,14 +153,22 @@ function DashboardSkeleton() {
     <>
       <HeaderSkeleton />
       <NowPanelSkeleton />
-      <BayMapSection
-        field={null}
-        fieldStatus="loading"
-        nowFieldIndex={0}
-        pointTimes={[]}
-        nowIndex={0}
-      />
-      <ForecastChartsSkeleton />
+      <section
+        className={dashboardStyles.forecastSection}
+        aria-labelledby="forecast-title"
+      >
+        <h2 id="forecast-title" className={chartStyles.sectionTitle}>
+          Forecast
+        </h2>
+        <BayMapSection
+          field={null}
+          fieldStatus="loading"
+          nowFieldIndex={0}
+          pointTimes={[]}
+          nowIndex={0}
+        />
+        <ForecastChartsSkeleton />
+      </section>
     </>
   );
 }
@@ -207,20 +217,28 @@ function DashboardContent({
         tempTrend={derived.tempDir}
         nextTide={derived.nextTide}
       />
-      <ScrubProvider>
-        <BayMapSection
-          field={field}
-          fieldStatus={fieldStatus}
-          nowFieldIndex={derived.nowFieldIndex}
-          pointTimes={derived.pointTimes}
-          nowIndex={derived.nowIndex}
-        />
-        <ForecastCharts
-          data={derived.ts}
-          nowIndex={derived.nowIndex}
-          tideEvents={derived.tideEvents}
-        />
-      </ScrubProvider>
+      <section
+        className={dashboardStyles.forecastSection}
+        aria-labelledby="forecast-title"
+      >
+        <h2 id="forecast-title" className={chartStyles.sectionTitle}>
+          Forecast
+        </h2>
+        <ScrubProvider>
+          <BayMapSection
+            field={field}
+            fieldStatus={fieldStatus}
+            nowFieldIndex={derived.nowFieldIndex}
+            pointTimes={derived.pointTimes}
+            nowIndex={derived.nowIndex}
+          />
+          <ForecastCharts
+            data={derived.ts}
+            nowIndex={derived.nowIndex}
+            tideEvents={derived.tideEvents}
+          />
+        </ScrubProvider>
+      </section>
     </>
   );
 }

@@ -279,7 +279,6 @@ function ChartStack({
 export function ForecastCharts(props: ForecastChartsProps) {
   return (
     <section className={styles.section} aria-label="48-hour forecast">
-      <h2 className={styles.sectionTitle}>Forecast</h2>
       <div className={styles.stack}>
         <ParentSize debounceTime={0} style={{ width: "100%" }}>
           {({ width }) =>
@@ -306,7 +305,6 @@ export function ForecastChartsSkeleton() {
       aria-label="48-hour forecast"
       aria-busy="true"
     >
-      <h2 className={styles.sectionTitle}>Forecast</h2>
       <div className={styles.stack}>
         <div className={styles.placeholder} />
       </div>
