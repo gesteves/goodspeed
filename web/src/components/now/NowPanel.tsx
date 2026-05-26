@@ -60,7 +60,7 @@ const SKELETON_CARDS: {
     shortLabel: "Water temp",
     icon: faTemperatureHalf,
     accent: "var(--chart-temp)",
-    hasSub: false,
+    hasSub: true,
   },
   {
     label: "Current",
@@ -170,6 +170,7 @@ export function NowPanel({
           iconColor="var(--chart-temp)"
           value={formatNumber(temp, 1)}
           unit={unitField(METRICS.waterTemp, units).unit}
+          sub={TREND_LABEL[tempTrend]}
         />
         <CurrentNowCard point={point} units={units} />
         <ReadingCard
