@@ -39,7 +39,7 @@
  *     GL's `.project()`, which requires a runtime Mapbox instance.
  *
  * Cache headers: short browser TTL (60s) so a missed cycle isn't pinned,
- * but a 1-hour shared `durable` cache with a 24-hour stale-while-revalidate
+ * but a shared `durable` cache with a 24-hour stale-while-revalidate
  * window so most social-card crawlers hit the cache rather than the live
  * function.
  */
@@ -281,7 +281,7 @@ export default async function handler(_req: Request): Promise<Response> {
       "content-type": "image/png",
       "cache-control": "public, max-age=60",
       "Netlify-CDN-Cache-Control":
-        "public, durable, s-maxage=3600, stale-while-revalidate=86400",
+        "public, durable, s-maxage=360, stale-while-revalidate=86400",
     },
   });
 }
