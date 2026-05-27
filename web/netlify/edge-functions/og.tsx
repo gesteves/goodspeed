@@ -20,8 +20,10 @@
  * visual change here lives there as a reminder.
  *
  * Cache headers: short browser TTL (60s) so a missed cycle isn't pinned, but
- * a 1-hour edge cache with a 24-hour stale-while-revalidate window so most
- * social-card crawlers and re-fetches hit the CDN rather than the live edge.
+ * a 1-hour per-edge cache with a 24-hour stale-while-revalidate window so
+ * most social-card crawlers and re-fetches hit the CDN rather than the live
+ * edge. Each Netlify edge node caches independently -- the `durable` shared
+ * cache is a Netlify Functions feature and has no effect on edge functions.
  */
 import React from "https://esm.sh/react@18.2.0";
 import { ImageResponse } from "https://deno.land/x/og_edge/mod.ts";
@@ -296,7 +298,7 @@ export default async function handler(_req: Request): Promise<Response> {
       "content-type": "image/png",
       "cache-control": "public, max-age=60",
       "Netlify-CDN-Cache-Control":
-        "public, durable, s-maxage=3600, stale-while-revalidate=86400",
+        "public, s-maxage=3600, stale-while-revalidate=86400",
     },
   });
 }
