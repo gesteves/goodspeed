@@ -10,8 +10,11 @@
  */
 import Layout from "@/layouts/Layout.astro";
 import { Dashboard } from "@/components/Dashboard";
+import { Share } from "@/components/Share";
 
 export const prerender = true;
+
+const shareUrl = new URL("/", Astro.site).toString();
 ---
 
 <Layout>
@@ -19,6 +22,7 @@ export const prerender = true;
     <a href="#main" class="skipLink">Skip to main content</a>
     <main id="main" class="main">
       <Dashboard client:load />
+      <Share baseUrl={shareUrl} client:visible />
       <footer class="footer">
         The data presented here is based on a hydrodynamic model provided by the National Oceanic and Atmospheric Administration’s San Francisco Bay Operational Forecast
         System. These are computer-generated forecasts, not measurements, have not been subjected to <abbr title="National Oceanic and Atmospheric Administration">NOAA</abbr>’s quality control procedures, and are provided “as is” for
