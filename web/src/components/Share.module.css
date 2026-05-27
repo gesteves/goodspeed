@@ -11,6 +11,7 @@
   justify-content: center;
   width: 40px;
   height: 40px;
+  flex: none;
   padding: 0;
   border: 1px solid var(--border);
   border-radius: 999px;
@@ -32,4 +33,40 @@
   display: block;
   width: 16px;
   height: 16px;
+}
+
+/*
+  Below 600px, 9 round buttons + gaps (~424px) start overflowing typical
+  phone viewports. Switch from wrapped to a horizontal scroller and fade the
+  edges so the overflow reads as "swipeable" rather than truncated. Negative
+  margin pulls the strip out to the page edges (page wrapper supplies the
+  14px horizontal padding) so buttons scroll cleanly from edge to edge.
+*/
+@media (max-width: 599px) {
+  .share {
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+    scroll-snap-type: x mandatory;
+    scroll-padding-left: 14px;
+    margin: 0 -14px;
+    padding: 0 14px;
+    mask-image: linear-gradient(
+      to right,
+      transparent 0,
+      black 24px,
+      black calc(100% - 24px),
+      transparent 100%
+    );
+  }
+
+  .share::-webkit-scrollbar {
+    display: none;
+  }
+
+  .button {
+    scroll-snap-align: start;
+  }
 }
