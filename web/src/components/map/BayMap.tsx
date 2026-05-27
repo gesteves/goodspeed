@@ -10,6 +10,7 @@ import {
   ARROW_HEAD_HALF,
   ARROW_SHAFT_PAD,
   ARROW_SHAFT_WIDTH,
+  arrowPx,
   FINISH_LAT,
   FINISH_LON,
   SLACK_SPEED_KT,
@@ -25,7 +26,7 @@ import { useTheme } from "../providers/ThemeProvider";
 import { useUnits } from "../providers/UnitsProvider";
 import styles from "./bayMap.module.css";
 import { computeGridExtent } from "./extent";
-import { MapLegend, arrowPx } from "./MapLegend";
+import { MapLegend } from "./MapLegend";
 import { useMapPositions } from "./projection";
 
 export interface BayMapProps {

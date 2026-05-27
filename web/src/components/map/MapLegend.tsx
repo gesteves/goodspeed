@@ -19,11 +19,3 @@ export function MapLegend({ units }: { units: UnitSystem }) {
     </div>
   );
 }
-
-/** Linear scaling kt -> px in the same range used for the map arrows. */
-export function arrowPx(speedKt: number): number {
-  const MIN = 14;
-  const MAX = 32;
-  const MAX_KT = 2.5;
-  return MIN + Math.min(1, Math.max(0, speedKt / MAX_KT)) * (MAX - MIN);
-}

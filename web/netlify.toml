@@ -31,6 +31,13 @@
 # function route so events still post through to plausible.io.
 # The /js/* wildcard lets PUBLIC_PLAUSIBLE_SCRIPT_ID change without touching
 # this file. Astro emits bundled JS under /_astro/, so there's no collision.
+# `@vercel/og` ships a WASM blob and locates it via `new URL("./yoga.wasm",
+# import.meta.url)`. When the bundler inlines it, that path lookup fails (the
+# WASM isn't in the function bundle). Mark it external so it's loaded from
+# node_modules at runtime, where its relative paths resolve correctly.
+[functions]
+  external_node_modules = ["@vercel/og"]
+
 [[redirects]]
   from = "/js/*"
   to = "https://plausible.io/js/:splat"

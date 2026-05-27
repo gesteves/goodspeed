@@ -60,17 +60,21 @@ React 16/17/18 peer range and we're on React 19.
 - `src/components/` (rest) — `Header`, `NowPanel`, `charts/` (visx),
   `map/` (lazy Mapbox via `React.lazy`). Units (imperial/metric) and theme
   (system/light/dark) are cookie-backed client context.
-- `netlify/edge-functions/og.tsx` — Deno edge function at `/og.png` that
+- `netlify/functions/og.mts` — Node Netlify Function at `/og.png` that
   renders the OG share image: Mapbox static basemap + the same current
   arrows that `components/map/BayMap.tsx` draws. The OG intentionally
   omits the start ring and finish marker — without the on-map text
-  labels they're meaningless to a share-preview viewer. Arrow-geometry
-  numbers live in `src/lib/map-constants.ts` and are imported by both
-  files. The color ramp and projection math are still inlined (different
-  runtimes can't share helper code).
-  **Any visual change to the live map that touches color stops, projection
-  math, or view extent must be ported to `og.tsx` to keep the share
-  preview in sync; arrow constants stay in sync automatically.**
+  labels they're meaningless to a share-preview viewer. Uses
+  `@vercel/og` for the JSX-to-PNG render. Shares the field-feed schema,
+  arrow geometry, `arrowPx` curve, view-extent constants, "frame
+  closest to now" picker, and temperature clamp domain with the live
+  map via imports from `@/lib/*` and `@/components/map/*`. Cache header
+  uses Netlify's `durable` directive (Functions-only feature) so a
+  single render fills a global shared cache, not just one per edge.
+  **Color stops (sRGB-interpolated here, OKLCH on the live map) and
+  the Mapbox-static projection math are intentionally duplicated in
+  `og.mts`; everything else now imports from shared modules and stays
+  in sync automatically.**
 - `src/pages/{404,500}.astro` — error pages. 500.astro is rendered
   automatically by Astro for unhandled SSR exceptions in `index.astro`'s
   frontmatter (middleware runs first, so `Astro.locals.theme` is populated).

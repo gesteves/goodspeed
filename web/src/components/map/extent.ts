@@ -23,7 +23,7 @@ export interface ViewCenter {
 }
 
 const EARTH_RADIUS_MI = 3958.7613;
-const MI_PER_DEG_LAT = (Math.PI * EARTH_RADIUS_MI) / 180;
+export const MI_PER_DEG_LAT = (Math.PI * EARTH_RADIUS_MI) / 180;
 
 /**
  * Compute the lat/lon extent the map should display plus its Mercator aspect

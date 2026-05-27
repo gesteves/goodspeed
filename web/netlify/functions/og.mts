@@ -1,58 +1,79 @@
-/** @jsxImportSource https://esm.sh/react@18.2.0 */
 /**
- * Netlify Edge Function that renders the Open Graph share image served at
+ * Netlify Function that renders the Open Graph share image served at
  * `/og.png`. Each request paints:
  *
  *  1. A Mapbox Static Images basemap centred on the bay map's geographic
  *     center (same `center` the dashboard reads from the field feed).
  *  2. SVG current arrows over the in-water grid points of the most recent
- *     frame, coloured by water temperature against the same ramp as
- *     `lib/colors.ts` (anchors converted to sRGB offline; interpolated in
- *     sRGB here for speed).
+ *     frame, coloured by water temperature against the same °C domain as
+ *     the live map (`TEMP_DOMAIN_C` from `@/lib/colors`), with anchors
+ *     pre-converted to sRGB and interpolated in sRGB here.
  *
- * The runtime is Deno (Netlify Edge), so this file cannot import the Astro
- * `@/lib/*` modules -- React, Zod, and og_edge all come from `esm.sh`/`deno`
- * URLs, and arrow-geometry constants are imported from
- * `src/lib/map-constants.ts` because that file is pure (no other imports).
+ * Why a Netlify Function and not an Edge Function: Netlify's `durable`
+ * cache directive (see the `Netlify-CDN-Cache-Control` header below) is a
+ * Functions-only feature. From an edge function it's a no-op; here it
+ * means one render globally per `s-maxage` window, not one per edge node.
  *
- * Color stops, the projection math, and the view extent are intentionally
- * duplicated from the dashboard map; the CLAUDE.md note about porting any
- * visual change here lives there as a reminder.
+ * Why `.mts` + `React.createElement` (`h`) instead of `.tsx` JSX:
+ * `netlify dev`'s local runner loads `.tsx` functions through Node's CJS
+ * loader (despite package.json `"type": "module"`). In CJS mode,
+ * `export default` becomes `module.exports.default`, so Netlify's v2
+ * handler detection misfires and `@vercel/og`'s `new URL("./yoga.wasm",
+ * import.meta.url)` throws. `.mts` forces native ESM loading, fixing
+ * both. The tradeoff is `createElement` calls in place of JSX -- the
+ * tree is small enough that the readability cost is minor.
  *
- * Cache headers: short browser TTL (60s) so a missed cycle isn't pinned, but
- * a 1-hour per-edge cache with a 24-hour stale-while-revalidate window so
- * most social-card crawlers and re-fetches hit the CDN rather than the live
- * edge. Each Netlify edge node caches independently -- the `durable` shared
- * cache is a Netlify Functions feature and has no effect on edge functions.
+ * Shared with the live map (`src/components/map/BayMap.tsx`):
+ *   - View height + Earth/lat conversions from `@/components/map/extent`
+ *   - Arrow geometry + `arrowPx` curve from `@/lib/map-constants`
+ *   - Frame "closest to now" picker from `@/lib/derive/now`
+ *   - Field-feed schema from `@/lib/schema`
+ *   - Temperature clamp domain from `@/lib/colors`
+ *
+ * Intentionally duplicated here:
+ *   - sRGB color stops + interpolator: the canonical `tempColor()` returns
+ *     `oklch(...)` strings, which satori/resvg do not reliably honor as
+ *     SVG `fill` attribute values. We interpolate in sRGB here; the slight
+ *     perceptual drift at arrow-pixel scale is acceptable.
+ *   - Mercator projection (`toWorld`/`project`): the live map uses Mapbox
+ *     GL's `.project()`, which requires a runtime Mapbox instance.
+ *
+ * Cache headers: short browser TTL (60s) so a missed cycle isn't pinned,
+ * but a 1-hour shared `durable` cache with a 24-hour stale-while-revalidate
+ * window so most social-card crawlers hit the cache rather than the live
+ * function.
  */
-import React from "https://esm.sh/react@18.2.0";
-import { ImageResponse } from "https://deno.land/x/og_edge/mod.ts";
-import { z } from "https://esm.sh/zod@3.23.8";
+import type { Config } from "@netlify/functions";
+import { ImageResponse } from "@vercel/og";
+import { createElement as h, type ReactNode } from "react";
+import { TEMP_DOMAIN_C } from "@/lib/colors";
+import { nearestTimeIndex } from "@/lib/derive/now";
+import { MI_PER_DEG_LAT, VIEW_HEIGHT_MILES } from "@/components/map/extent";
 import {
   ARROW_HEAD_BACK,
   ARROW_HEAD_FRONT,
   ARROW_HEAD_HALF,
   ARROW_SHAFT_PAD,
   ARROW_SHAFT_WIDTH,
+  arrowPx,
   SLACK_SPEED_KT,
-} from "../../src/lib/map-constants.ts";
+} from "@/lib/map-constants";
+import { FieldFeedSchema } from "@/lib/schema";
 
 const WIDTH = 1200;
 const HEIGHT = 630;
 
-// Native dashboard view is 1.77 mi tall x 3.0 mi wide (extent.ts). OG is wider
-// (1200/630 ≈ 1.905); anchor height and widen so the static map fills the OG
-// canvas without padding -- a few extra arrows fall on the L/R edges.
-const VIEW_HEIGHT_MILES = 1.77;
-const EARTH_RADIUS_MI = 3958.7613;
-const MI_PER_DEG_LAT = (Math.PI * EARTH_RADIUS_MI) / 180;
+// Native dashboard view is 1.77 mi tall x 3.0 mi wide. OG is wider
+// (1200/630 ≈ 1.905); anchor on the shared height and widen so the static
+// map fills the OG canvas without padding -- a few extra arrows fall on
+// the L/R edges.
 const VIEW_WIDTH_MILES = VIEW_HEIGHT_MILES * (WIDTH / HEIGHT);
 
-
 // Water-temperature color ramp. Anchors are the OKLCH stops in
-// web/src/lib/colors.ts converted offline to sRGB; we interpolate in sRGB on
-// the edge to avoid shipping an OKLCH conversion (imperceptible drift at
-// arrow-pixel scale).
+// `@/lib/colors` converted offline to sRGB; we interpolate in sRGB here
+// to avoid shipping an OKLCH conversion (imperceptible drift at
+// arrow-pixel scale) and to dodge satori/resvg's flaky support for
+// oklch() inside SVG `fill` attributes.
 const STOPS: ReadonlyArray<{ c: number; r: number; g: number; b: number }> = [
   { c: 12.778, r: 0x53, g: 0xa3, b: 0xf2 },
   { c: 14.167, r: 0x3e, g: 0xcc, b: 0xe2 },
@@ -62,8 +83,7 @@ const STOPS: ReadonlyArray<{ c: number; r: number; g: number; b: number }> = [
 ];
 
 function tempColor(tempC: number): string {
-  const lo = STOPS[0].c;
-  const hi = STOPS[STOPS.length - 1].c;
+  const [lo, hi] = TEMP_DOMAIN_C;
   const c = Math.min(hi, Math.max(lo, tempC));
   let i = 0;
   while (i < STOPS.length - 1 && c > STOPS[i + 1].c) i++;
@@ -80,39 +100,9 @@ function tempColor(tempC: number): string {
   return `rgb(${r},${g},${bl})`;
 }
 
-// Linear scaling kt -> px, matching MapLegend.arrowPx. ARROW_SCALE mirrors
-// the live map's `arrowScale` knob -- the OG canvas is wider than the
-// dashboard map so the arrows read a touch small at scale 1.
+// The OG canvas is wider than the dashboard map, so the shared `arrowPx`
+// curve reads a touch small at scale 1; bump it here.
 const ARROW_SCALE = 1.4;
-function arrowPx(speedKt: number): number {
-  const MIN = 14;
-  const MAX = 32;
-  return (MIN + Math.min(1, Math.max(0, speedKt / 2.5)) * (MAX - MIN)) *
-    ARROW_SCALE;
-}
-
-// Minimal Zod schema -- only the fields the OG needs. Edge functions cannot
-// import @/lib/schema (Astro alias) so the full schema lives in src/ for the
-// dashboard; here we revalidate just enough to fail fast on a broken feed.
-const FieldFeedLite = z.object({
-  center: z.object({ lat: z.number(), lon: z.number() }),
-  grid: z.object({
-    lat: z.array(z.number()).min(1),
-    lon: z.array(z.number()).min(1),
-  }),
-  t: z.array(z.string()).min(1),
-  frames: z
-    .array(
-      z.object({
-        current_speed_kt: z.array(z.number()),
-        current_bearing_deg: z.array(z.number()),
-        water_temp_c: z.array(z.number()),
-      }),
-    )
-    .min(1),
-});
-
-type FieldFeedLite = z.infer<typeof FieldFeedLite>;
 
 function notFound(reason: string): Response {
   console.warn("og: not available:", reason);
@@ -125,30 +115,16 @@ function notFound(reason: string): Response {
   });
 }
 
-function pickNowFrame(times: readonly string[]): number {
-  const now = Date.now();
-  let best = 0;
-  let bestDiff = Math.abs(Date.parse(times[0]) - now);
-  for (let i = 1; i < times.length; i++) {
-    const d = Math.abs(Date.parse(times[i]) - now);
-    if (d < bestDiff) {
-      bestDiff = d;
-      best = i;
-    }
-  }
-  return best;
-}
-
 export default async function handler(_req: Request): Promise<Response> {
-  const FEED = Deno.env.get("GOODSPEED_FIELD_FEED_URL");
+  const FEED = process.env.GOODSPEED_FIELD_FEED_URL;
   // Static Images API runs server-side (no Referer/Origin), so the
-  // URL-restricted PUBLIC_MAPBOX_TOKEN 403s. This is a separate, unrestricted
-  // token used only by this edge function.
-  const TOKEN = Deno.env.get("MAPBOX_STATIC_TOKEN");
+  // URL-restricted PUBLIC_MAPBOX_TOKEN 403s. This is a separate,
+  // unrestricted token used only by this function.
+  const TOKEN = process.env.MAPBOX_STATIC_TOKEN;
   if (!FEED) return notFound("GOODSPEED_FIELD_FEED_URL not set");
   if (!TOKEN) return notFound("MAPBOX_STATIC_TOKEN not set");
 
-  let feed: FieldFeedLite;
+  let feed;
   try {
     const res = await fetch(FEED, { signal: AbortSignal.timeout(8000) });
     if (!res.ok) {
@@ -161,7 +137,7 @@ export default async function handler(_req: Request): Promise<Response> {
         },
       });
     }
-    feed = FieldFeedLite.parse(await res.json());
+    feed = FieldFeedSchema.parse(await res.json());
   } catch (err) {
     console.error("og: field feed fetch/parse failed:", err);
     return new Response("Bad Gateway", {
@@ -174,7 +150,7 @@ export default async function handler(_req: Request): Promise<Response> {
   }
 
   const { center, grid } = feed;
-  const frameIdx = pickNowFrame(feed.t);
+  const frameIdx = nearestTimeIndex(feed.t);
   const frame = feed.frames[Math.min(frameIdx, feed.frames.length - 1)];
 
   // Pick a fractional zoom so VIEW_WIDTH_MILES at the center latitude fills
@@ -196,10 +172,10 @@ export default async function handler(_req: Request): Promise<Response> {
         worldSize,
     };
   };
-  const c = toWorld(center.lon, center.lat);
+  const cWorld = toWorld(center.lon, center.lat);
   const project = (lon: number, lat: number) => {
     const p = toWorld(lon, lat);
-    return { x: p.x - c.x + WIDTH / 2, y: p.y - c.y + HEIGHT / 2 };
+    return { x: p.x - cWorld.x + WIDTH / 2, y: p.y - cWorld.y + HEIGHT / 2 };
   };
 
   const mapboxUrl =
@@ -218,26 +194,26 @@ export default async function handler(_req: Request): Promise<Response> {
     frame.current_bearing_deg.length,
     frame.water_temp_c.length,
   );
-  const arrows: React.ReactNode[] = [];
+  const arrows: ReactNode[] = [];
   for (let i = 0; i < n; i++) {
     const { x, y } = project(grid.lon[i], grid.lat[i]);
     const sp = frame.current_speed_kt[i];
     const color = tempColor(frame.water_temp_c[i]);
     if (sp < SLACK_SPEED_KT) {
       arrows.push(
-        <circle
-          key={i}
-          cx={x}
-          cy={y}
-          r={3 * ARROW_SCALE}
-          fill="none"
-          stroke={color}
-          strokeWidth={2 * ARROW_SCALE}
-        />,
+        h("circle", {
+          key: i,
+          cx: x,
+          cy: y,
+          r: 3 * ARROW_SCALE,
+          fill: "none",
+          stroke: color,
+          strokeWidth: 2 * ARROW_SCALE,
+        }),
       );
       continue;
     }
-    const len = arrowPx(sp);
+    const len = arrowPx(sp) * ARROW_SCALE;
     const tip = -len / 2;
     const bearing = frame.current_bearing_deg[i];
     const headHalf = ARROW_HEAD_HALF * ARROW_SCALE;
@@ -245,50 +221,57 @@ export default async function handler(_req: Request): Promise<Response> {
     const headFront = ARROW_HEAD_FRONT * ARROW_SCALE;
     const shaftPad = ARROW_SHAFT_PAD * ARROW_SCALE;
     arrows.push(
-      <g key={i} transform={`rotate(${bearing} ${x} ${y})`}>
-        <line
-          x1={x}
-          y1={y + len / 2}
-          x2={x}
-          y2={y + tip + shaftPad}
-          stroke={color}
-          strokeWidth={ARROW_SHAFT_WIDTH * ARROW_SCALE}
-          strokeLinecap="round"
-        />
-        <polygon
-          points={`${x},${y + tip - headFront} ${x - headHalf},${y + tip + headBack} ${x + headHalf},${y + tip + headBack}`}
-          fill={color}
-        />
-      </g>,
+      h(
+        "g",
+        { key: i, transform: `rotate(${bearing} ${x} ${y})` },
+        h("line", {
+          x1: x,
+          y1: y + len / 2,
+          x2: x,
+          y2: y + tip + shaftPad,
+          stroke: color,
+          strokeWidth: ARROW_SHAFT_WIDTH * ARROW_SCALE,
+          strokeLinecap: "round",
+        }),
+        h("polygon", {
+          points:
+            `${x},${y + tip - headFront} ` +
+            `${x - headHalf},${y + tip + headBack} ` +
+            `${x + headHalf},${y + tip + headBack}`,
+          fill: color,
+        }),
+      ),
     );
   }
 
-  const tree = (
-    <div
-      style={{
+  const tree = h(
+    "div",
+    {
+      style: {
         display: "flex",
         position: "relative",
         width: WIDTH,
         height: HEIGHT,
         backgroundColor: "#e9eef2",
-      }}
-    >
-      <img
-        src={mapboxUrl}
-        width={WIDTH}
-        height={HEIGHT}
-        style={{ position: "absolute", top: 0, left: 0 }}
-      />
-      <svg
-        width={WIDTH}
-        height={HEIGHT}
-        viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
-        xmlns="http://www.w3.org/2000/svg"
-        style={{ position: "absolute", top: 0, left: 0 }}
-      >
-        {arrows}
-      </svg>
-    </div>
+      },
+    },
+    h("img", {
+      src: mapboxUrl,
+      width: WIDTH,
+      height: HEIGHT,
+      style: { position: "absolute", top: 0, left: 0 },
+    }),
+    h(
+      "svg",
+      {
+        width: WIDTH,
+        height: HEIGHT,
+        viewBox: `0 0 ${WIDTH} ${HEIGHT}`,
+        xmlns: "http://www.w3.org/2000/svg",
+        style: { position: "absolute", top: 0, left: 0 },
+      },
+      arrows,
+    ),
   );
 
   return new ImageResponse(tree, {
@@ -298,12 +281,11 @@ export default async function handler(_req: Request): Promise<Response> {
       "content-type": "image/png",
       "cache-control": "public, max-age=60",
       "Netlify-CDN-Cache-Control":
-        "public, s-maxage=3600, stale-while-revalidate=86400",
+        "public, durable, s-maxage=3600, stale-while-revalidate=86400",
     },
   });
 }
 
-export const config = {
+export const config: Config = {
   path: "/og.png",
-  cache: "manual",
 };
