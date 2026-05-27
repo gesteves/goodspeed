@@ -1,8 +1,10 @@
-import { useSyncExternalStore } from "react";
+import { useRef, useState, useSyncExternalStore } from "react";
 import {
   faArrowUpFromBracket,
+  faCheck,
   faComment,
   faEnvelope,
+  faLink,
 } from "@fortawesome/pro-regular-svg-icons";
 import {
   faBluesky,
@@ -72,6 +74,22 @@ export function Share({ baseUrl }: { baseUrl: string }) {
     `${TITLE} ${tagged(baseUrl, "SMS", "sms")}`,
   )}`;
 
+  const [copied, setCopied] = useState(false);
+  const copiedTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleCopy = async () => {
+    try {
+      // Bare URL, no UTM — recipients shouldn't inherit attribution as
+      // "share-button" if they got the link via a copy-and-paste chain.
+      await navigator.clipboard.writeText(baseUrl);
+      setCopied(true);
+      if (copiedTimeoutRef.current) clearTimeout(copiedTimeoutRef.current);
+      copiedTimeoutRef.current = setTimeout(() => setCopied(false), 1500);
+    } catch {
+      // Clipboard API rejected (insecure context, denied permission) — ignore.
+    }
+  };
+
   const handleNativeShare = async () => {
     try {
       await navigator.share({
@@ -96,6 +114,15 @@ export function Share({ baseUrl }: { baseUrl: string }) {
           <FontAwesomeIcon icon={faArrowUpFromBracket} aria-hidden="true" />
         </button>
       )}
+      <button
+        type="button"
+        onClick={handleCopy}
+        aria-label={copied ? "Link copied" : "Copy link to clipboard"}
+        title={copied ? "Link copied" : "Copy link to clipboard"}
+        className={styles.button}
+      >
+        <FontAwesomeIcon icon={copied ? faCheck : faLink} aria-hidden="true" />
+      </button>
       <a
         href={email}
         aria-label="Share by email"
