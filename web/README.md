@@ -34,6 +34,21 @@ Typed in `astro.config.mjs` under `env.schema`; see `.env.example`.
 - `npm test` — Vitest (unit tests + schema-sync guard)
 - `npm run check` — lint + typecheck + tests (what CI runs)
 
+## Map image export
+
+`npm run map-image` renders a high-res PNG of the bay map (current arrows,
+legend, swim start/finish) at a given time — handy for embedding in a blog
+post. Requires `GOODSPEED_FIELD_FEED_URL` and `MAPBOX_STATIC_TOKEN` (an
+unrestricted token) in `.env.local`.
+
+```bash
+npm run map-image                          # prompts; blank = current conditions
+npm run map-image -- "8:30am June 8 2026"  # natural-language date/time
+```
+
+Output lands in `map-exports/` (gitignored). Flags: `--out <path>`,
+`--theme light|dark`, `--units imperial|metric`, `--arrow-scale <n>`.
+
 ## Deploy
 
 Hosted on Netlify. `netlify.toml` lives in this directory (`web/netlify.toml`)

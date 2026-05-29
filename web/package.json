@@ -12,6 +12,7 @@
     "typecheck": "astro check",
     "test": "vitest run",
     "test:watch": "vitest",
+    "map-image": "tsx scripts/map-image.ts",
     "check": "npm run lint && npm run typecheck && npm test",
     "check:schema": "vitest run src/lib/schema.test.ts"
   },
@@ -53,9 +54,11 @@
     "@types/react-dom": "^19",
     "@vitest/coverage-v8": "^4.1.7",
     "astro-eslint-parser": "^1.4.0",
+    "chrono-node": "^2.9.1",
     "eslint": "^9",
     "eslint-plugin-astro": "^1.7.0",
     "eslint-plugin-react-hooks": "^7.1.1",
+    "tsx": "^4.22.3",
     "typescript": "^6",
     "typescript-eslint": "^8.59.4",
     "vitest": "^4.1.7"
