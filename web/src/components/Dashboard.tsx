@@ -16,7 +16,7 @@ import {
   UNITS_COOKIE,
   type Theme,
 } from "@/lib/preferences";
-import { DEFAULT_UNIT_SYSTEM } from "@/lib/units/units";
+import { localeDefaultUnits } from "@/lib/units/units";
 import chartStyles from "./charts/charts.module.css";
 import { ForecastCharts, ForecastChartsSkeleton } from "./charts/ForecastCharts";
 import { ScrubProvider } from "./charts/ScrubContext";
@@ -72,7 +72,7 @@ export function Dashboard({ initialData }: Props) {
     readPref(THEME_COOKIE, isTheme, "system"),
   );
   const [initialUnits] = useState(() =>
-    readPref(UNITS_COOKIE, isUnitSystem, DEFAULT_UNIT_SYSTEM),
+    readPref(UNITS_COOKIE, isUnitSystem, localeDefaultUnits()),
   );
   const inFlight = useRef<Promise<void> | null>(null);
   const dataRef = useRef(data);

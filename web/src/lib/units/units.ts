@@ -9,6 +9,40 @@ export type UnitSystem = "imperial" | "metric";
 
 export const DEFAULT_UNIT_SYSTEM: UnitSystem = "imperial";
 
+/** Regions that default to imperial units: the US and Liberia. */
+const IMPERIAL_REGIONS = new Set(["US", "LR"]);
+
+/**
+ * Best-effort default unit system for a first-time visitor -- used only as the
+ * fallback when there is no `gs-units` cookie yet, so an explicit toggle always
+ * wins. Resolves a region from a `?locale=` override (handy for debugging) or
+ * the browser language, expanding bare tags via {@link Intl.Locale.maximize}
+ * (`en` -> US, `fr` -> FR). Returns "metric" only when we can positively
+ * identify a non-imperial region; any uncertainty (no `navigator`, empty or
+ * unparseable tag, region-less result) falls back to {@link DEFAULT_UNIT_SYSTEM}.
+ * That imperial bias suits this dashboard's US-centric audience.
+ */
+export function localeDefaultUnits(): UnitSystem {
+  if (typeof navigator === "undefined") return DEFAULT_UNIT_SYSTEM;
+
+  const override =
+    typeof window !== "undefined"
+      ? new URLSearchParams(window.location.search).get("locale")
+      : null;
+  const tag = override ?? navigator.language;
+  if (!tag) return DEFAULT_UNIT_SYSTEM;
+
+  let region: string | undefined;
+  try {
+    region = new Intl.Locale(tag).maximize().region ?? undefined;
+  } catch {
+    return DEFAULT_UNIT_SYSTEM;
+  }
+  if (!region) return DEFAULT_UNIT_SYSTEM;
+
+  return IMPERIAL_REGIONS.has(region.toUpperCase()) ? "imperial" : "metric";
+}
+
 /** Keys of TimeseriesPoint whose value is a number. */
 type NumericTimeseriesKey = {
   [K in keyof TimeseriesPoint]: TimeseriesPoint[K] extends number ? K : never;
