@@ -1,134 +1,140 @@
 # Goodspeed web dashboard
 
-Astro 6 (SSR via `@astrojs/netlify`) + a React 19 island. Renders the
-swim-conditions feed published by `../api/` for NOAA SFBOFS station SFB1204
-(SW of Alcatraz Island). The Escape from Alcatraz race start point isn't
-fixed — swimmers are dropped from a boat at a location chosen on race day for
-conditions — so the dashboard surfaces conditions in the central bay near
-Alcatraz, not annotations tied to a specific route.
+Astro 6 + a single React 19 island. Renders the swim-conditions feed published
+by `../api/` for NOAA SFBOFS station SFB1204 (SW of Alcatraz Island). The
+Escape from Alcatraz start point isn't fixed — swimmers are dropped from a boat
+at a spot chosen on race day — so the dashboard shows conditions in the central
+bay near Alcatraz, not annotations tied to a specific route.
 
-This project used to be Next.js 16; the migration is complete and there is no
-`next/*` import anywhere. If you find one, that's a bug, not a fallback. The
-React components do not need `"use client"` directives — Astro hydrates them
-based on `client:*` directives on the island root.
+**Stack:** Astro 6 (`output: "server"` + `@astrojs/netlify`, but pages opt into
+`prerender = true`), React 19 island, visx charts, Mapbox GL, Zod, Vitest,
+ESLint, TypeScript. Node LTS — run `nvm use` (reads `.nvmrc` = `lts/*`).
+
+## Setup
+
+```sh
+npm install        # needs FONTAWESOME_NPM_AUTH_TOKEN in the env (FA Pro registry; else 401)
+cp .env.example .env.local   # then fill in GOODSPEED_FEED_URL etc.
+```
+
+`.npmrc` sets `legacy-peer-deps=true` (required: `@visx/*` still declares a
+React 16–18 peer range and we're on React 19). Leave it.
 
 ## Commands
 
-Use Node LTS (`nvm use` reads `.nvmrc`).
+Prefer file-scoped commands for fast feedback; use the full suite before pushing.
 
-- `npm run dev` — dev server at http://localhost:4321
-- `npm run build` — production build (writes `dist/` + `.netlify/`)
-- `npm run preview` — preview the production build locally
-- `npm run lint` — ESLint
-- `npm run typecheck` — `astro check` (Astro language server + `tsc --noEmit`)
-- `npm test` — Vitest
+```sh
+npm run dev          # dev server at http://localhost:4321
+npm run check        # lint + typecheck + test — the full gate Netlify runs
+npm run build        # production build (writes dist/ + .netlify/)
+npm run preview      # serve the production build locally
 
-`legacy-peer-deps=true` in `.npmrc` is required: `@visx/*` still declares a
-React 16/17/18 peer range and we're on React 19.
+# File-scoped (fast):
+npx vitest run src/lib/derive/tides.test.ts   # one test file
+npx eslint src/components/Dashboard.tsx        # lint one file
+npm run check:schema                           # just the feed/contract drift test
 
-## Architecture
+npm run map-image    # tsx scripts/map-image.ts — write bay-map stills locally
+```
 
-- `src/lib/schema.ts` — Zod schema for the feed, derived from the shared contract at
-  `../schema/sfbofs-sfb1204.schema.json` (the source of truth). `schema.test.ts` fails
-  if the two drift apart.
-- `src/lib/data-source/` — the only place that knows where data comes from.
-  `getDashboardData()` aggregates the SFBOFS point feed (`sfbofs.ts`) and the
-  gridded field feed (`field.ts`). `raw.ts` has an in-memory 5-min TTL cache +
-  single-flight guard for the http(s) fetch path, a 10s `AbortSignal` timeout,
-  and falls back to the last successful response on upstream failure.
-- `src/lib/derive/` — pure functions over the timeseries (tide highs/lows, "now"
-  point, current flood/ebb, staleness). Unit-tested.
-- `src/middleware.ts` — reads the `gs-theme` / `gs-units` cookies into
-  `Astro.locals` once per request so the layout and pages share the same values.
-- `src/layouts/Layout.astro` — HTML shell. Sets `<html data-theme>` flash-free
-  from `Astro.props.initialTheme`, imports Geist via
-  `@fontsource-variable/geist{,-mono}`, injects Plausible analytics in `<head>`
-  (proxied through Netlify rewrites).
-- `src/pages/index.astro` — Astro frontmatter fetches `getDashboardData()` for
-  the first paint and mounts a single `<Dashboard client:load>` React island
-  with the initial data + theme/units pulled from `Astro.locals`.
-- `src/pages/dashboard.json.ts` — SSR JSON endpoint the island polls every 60s
-  (also on `visibilitychange` / `online`) to refresh state without a page
-  navigation. It is intentionally NOT under `/api/`: the `/api/event`
-  rewrite in `netlify.toml` proxies that namespace to Plausible. Sets
-  `Netlify-CDN-Cache-Control: s-maxage=300, stale-while-revalidate=600` so
-  Netlify's edge caches the response between origin hits.
-- `src/components/Dashboard.tsx` — the one big React island. Holds the
-  refresh loop, re-runs derivations on a local clock tick (so "now" follows
-  the user's clock), and skips `setState` when the model cycle is unchanged
-  so visx charts don't re-render on no-op refreshes.
-- `src/components/` (rest) — `Header`, `NowPanel`, `charts/` (visx),
-  `map/` (lazy Mapbox via `React.lazy`). Units (imperial/metric) and theme
-  (system/light/dark) are cookie-backed client context.
-- `netlify/functions/og.mts` — Node Netlify Function at `/images/og.png`
-  that renders the OG share image: Mapbox static basemap + the same current
-  arrows that `components/map/BayMap.tsx` draws. The OG intentionally
-  omits the start ring and finish marker — without the on-map text
-  labels they're meaningless to a share-preview viewer. Uses
-  `@vercel/og` for the JSX-to-PNG render. Shares the field-feed schema,
-  arrow geometry, `arrowPx` curve, view-extent constants, "frame
-  closest to now" picker, and temperature clamp domain with the live
-  map via imports from `@/lib/*` and `@/components/map/*`. Cache header
-  uses Netlify's `durable` directive (Functions-only feature) so a
-  single render fills a global shared cache, not just one per edge.
-  **Color stops (sRGB-interpolated here, OKLCH on the live map) and
-  the Mapbox-static projection math are intentionally duplicated in
-  `og.mts`; everything else now imports from shared modules and stays
-  in sync automatically.**
-- `netlify/functions/map.mts` — Node Netlify Function serving the
-  high-res (2560×1510) bay-map stills at `/images/map/current.png`,
-  `/images/map/today/HHMM.png` (HH:MM today, Pacific), and
-  `/images/map/tomorrow/HHMM.png` (HH:MM tomorrow, Pacific). Returns
-  404 when the requested time is outside the field feed's coverage.
-  Renders via the shared `@/lib/map-image/render` builder — the *same*
-  image the local CLI (`scripts/map-image.ts`) writes — so the endpoint
-  and the CLI can't drift. `/images/og.png` is the separate, smaller
-  social-share crop owned by `og.mts`.
-- `src/lib/map-image/render.ts` — shared builder for the full bay-map
-  still (arrows + start ring + finish marker + labels + legend). Pure
-  tree construction, no I/O or env; consumed by both `map.mts` and the
-  `scripts/map-image.ts` CLI. Imports the live map's constants via
-  *relative* paths (not `@/`) so it resolves identically under the
-  Netlify function bundler and tsx. Duplicates the sRGB color ramp for
-  the same satori/resvg reason as `og.mts`.
-- `src/pages/{404,500}.astro` — error pages. 500.astro is rendered
-  automatically by Astro for unhandled SSR exceptions in `index.astro`'s
-  frontmatter (middleware runs first, so `Astro.locals.theme` is populated).
+`npm run typecheck` is `astro check` (Astro language server + `tsc --noEmit`).
+`npm run lint` is bare `eslint`. `npm test` is `vitest run`.
 
-## Conventions
+## Code style & conventions
 
-- Feed timestamps are UTC; display in `America/Los_Angeles`.
-- The feed carries both unit systems — the units toggle selects a field, it does not
-  convert.
-- Current bearing = direction the current flows TOWARD. Wind bearing = direction the
-  wind comes FROM. Keep them clearly labelled.
+- **No `next/*` imports.** This was Next.js once; the migration is complete. A
+  `next/*` import is a bug, not a fallback.
+- **No `"use client"` directives.** Astro hydrates the island via `client:*`
+  directives on the island root, not React Server Component boundaries.
+- Path alias `@/` → `src/` (set in `astro.config.mjs` and `vitest.config.ts`).
+- **Env vars:** import from `astro:env/server` or `astro:env/client` — never
+  `process.env`. Schema lives in `astro.config.mjs` under `env.schema`;
+  required-but-missing server vars throw at startup. `src/lib/env.ts` is a thin
+  re-export of the validated values.
+- Feed timestamps are UTC; **display in `America/Los_Angeles`**.
+- The feed carries **both** unit systems — the units toggle selects which field
+  to read, it does **not** convert. See `src/lib/units/units.ts`.
+- **Current bearing = direction the current flows TOWARD. Wind bearing =
+  direction the wind comes FROM.** Keep them clearly labelled.
 - "Just the data": charts and readings only, no swim verdict. Light factual
   annotations (tide highs/lows, flood/ebb, nowcast/forecast boundary) are fine.
 
+## Architecture
+
+Pages ship a **prerendered static HTML shell** with skeletons; the `<Dashboard
+client:load>` island fetches `/dashboard.json` on hydration to fill them. There
+is **no middleware** — prefs are read client-side (see below).
+
+- `src/pages/index.astro` — `prerender = true`. Mounts the island; passes no
+  initial data, so first paint is a skeleton and TTFB is decoupled from the
+  upstream NOAA fetch.
+- `src/pages/dashboard.json.ts` — the one SSR route. Calls `getDashboardData()`;
+  the island polls it every 60s (also on `visibilitychange` / `online`). NOT
+  under `/api/` on purpose: the `/api/event` rewrite in `netlify.toml` proxies
+  that namespace to Plausible. Sets `Netlify-CDN-Cache-Control` so the edge
+  caches it ~5 min.
+- `src/components/Dashboard.tsx` — the single React island. Owns the refresh
+  loop, re-derives on a local clock tick (so "now" follows the user's clock),
+  and skips `setState` when the model cycle is unchanged so visx charts don't
+  re-render on no-op refreshes. Theme/units survive refreshes because the whole
+  interactive tree lives here.
+- `src/layouts/Layout.astro` — HTML shell. Applies the `gs-theme` cookie
+  flash-free via an inline `is:inline` script (pages are prerendered, so a
+  server can't do it). Preloads `/dashboard.json`, injects Plausible.
+- `src/lib/data-source/` — the only place that knows where data comes from.
+  `getDashboardData()` aggregates the point feed (`sfbofs.ts`) and gridded field
+  feed (`field.ts`). `raw.ts` has a 5-min TTL cache + single-flight guard, a
+  per-fetch timeout, and falls back to the last good response on upstream
+  failure.
+- `src/lib/schema.ts` — Zod schema for the feed, derived from the shared
+  contract at `../schema/sfbofs-sfb1204.schema.json` (**source of truth**).
+  `schema.test.ts` fails if the two drift apart.
+- `src/lib/derive/` — pure functions over the timeseries (tide extrema, "now"
+  point, flood/ebb, staleness). Unit-tested.
+- `src/components/` — `Header`, `now/`, `charts/` (visx), `map/` (lazy Mapbox
+  via `React.lazy`). Theme (`gs-theme`) and units (`gs-units`) are cookie-backed
+  client context in `components/providers/`.
+- `netlify/functions/{og,map}.mts` — Node Functions for share/still images at
+  `/images/og.png` and `/images/map/*.png`. Must be `.mts` (ESM) — `netlify dev`
+  loads `.tsx` as CJS, which breaks `@vercel/og`. `map.mts` and the
+  `scripts/map-image.ts` CLI both render via `src/lib/map-image/render.ts`, so
+  they can't drift. **The sRGB color stops and Mapbox-static projection math are
+  intentionally duplicated in `og.mts` / `render.ts`** (satori/resvg can't run
+  the live map's OKLCH path); everything else imports from shared modules.
+
+## Testing
+
+Vitest, `environment: "node"`, files are `src/**/*.test.ts`. Derivations,
+schema, colors, angles, and the units locale default all have unit tests.
+Shared fixtures in `src/test/fixtures.ts`. Add a test alongside the module
+(`foo.ts` → `foo.test.ts`). Run one file with `npx vitest run <path>`.
+
+## Safety & permission boundaries
+
+- **Autonomous:** read files, `npm run lint` / `typecheck` / `test`, file-scoped
+  vitest/eslint, edits + the dev server.
+- **Ask first:** `npm install` / dependency changes (needs the FA token and can
+  touch the lockfile), any `git` commit/push, deleting files, or anything that
+  deploys. Don't commit `.env.local`.
+
 ## Config
 
-Typed env vars live in `astro.config.mjs` under `env.schema`. Use
-`import { X } from "astro:env/server"` (or `"astro:env/client"`); never
-`process.env`. Required-but-missing server vars throw at startup. See
-`.env.example`.
+Typed in `astro.config.mjs` (`env.schema`); see `.env.example`.
 
-- `GOODSPEED_FEED_URL` — server, required. Feed location (http(s) URL,
-  `file:` URL, or path).
-- `GOODSPEED_FIELD_FEED_URL` — server, optional. Gridded field feed for the
-  bay map.
+- `GOODSPEED_FEED_URL` — server, **required**. Point feed (http(s)/`file:`/path).
+- `GOODSPEED_FIELD_FEED_URL` — server, optional. Gridded field feed for the map.
 - `PUBLIC_MAPBOX_TOKEN` — client, optional. The bay map is hidden if absent.
+- `PUBLIC_PLAUSIBLE_SCRIPT_ID` — client, optional. Analytics off if unset.
+
+Secrets live in `.env.local` (local) and Netlify env vars (deploy) — never in
+this repo.
 
 ## Deploy
 
-Hosted on Netlify with the standard Git-triggered build flow. Netlify runs
-`npm run check && npm run build` on every push; `check` is
-`lint && typecheck && test`, so any failure blocks the deploy.
-`@astrojs/netlify` writes the function bundle + redirects into `.netlify/`
-automatically — no build plugin needed.
-
-The `[[redirects]]` in `netlify.toml` proxy Plausible analytics (the script
-and `/api/event`) through the dashboard's own domain so ad blockers don't
-drop them. The Netlify site is configured with `base = "web"` in the
-dashboard, so Netlify reads `web/netlify.toml` directly.
-
-The repo's `../.github/workflows/ci.yml` only covers the API (deploy to Fly.io).
+Netlify, Git-triggered, `base = "web"`. Every push runs
+`npm run check && npm run build`; `check` is `lint && typecheck && test`, so any
+failure blocks the deploy. `@astrojs/netlify` writes the function bundle +
+redirects into `.netlify/` automatically. `netlify.toml` proxies the Plausible
+script and `/api/event` through this domain so ad blockers don't drop them. The
+web app is **not** in `../.github/workflows/ci.yml` — that workflow is API-only.
