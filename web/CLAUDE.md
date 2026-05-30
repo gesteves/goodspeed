@@ -60,8 +60,8 @@ React 16/17/18 peer range and we're on React 19.
 - `src/components/` (rest) — `Header`, `NowPanel`, `charts/` (visx),
   `map/` (lazy Mapbox via `React.lazy`). Units (imperial/metric) and theme
   (system/light/dark) are cookie-backed client context.
-- `netlify/functions/og.mts` — Node Netlify Function at `/og.png` that
-  renders the OG share image: Mapbox static basemap + the same current
+- `netlify/functions/og.mts` — Node Netlify Function at `/images/og.png`
+  that renders the OG share image: Mapbox static basemap + the same current
   arrows that `components/map/BayMap.tsx` draws. The OG intentionally
   omits the start ring and finish marker — without the on-map text
   labels they're meaningless to a share-preview viewer. Uses
@@ -75,6 +75,22 @@ React 16/17/18 peer range and we're on React 19.
   the Mapbox-static projection math are intentionally duplicated in
   `og.mts`; everything else now imports from shared modules and stays
   in sync automatically.**
+- `netlify/functions/map.mts` — Node Netlify Function serving the
+  high-res (2560×1510) bay-map stills at `/images/map/current.png`,
+  `/images/map/today/HHMM.png` (HH:MM today, Pacific), and
+  `/images/map/tomorrow/HHMM.png` (HH:MM tomorrow, Pacific). Returns
+  404 when the requested time is outside the field feed's coverage.
+  Renders via the shared `@/lib/map-image/render` builder — the *same*
+  image the local CLI (`scripts/map-image.ts`) writes — so the endpoint
+  and the CLI can't drift. `/images/og.png` is the separate, smaller
+  social-share crop owned by `og.mts`.
+- `src/lib/map-image/render.ts` — shared builder for the full bay-map
+  still (arrows + start ring + finish marker + labels + legend). Pure
+  tree construction, no I/O or env; consumed by both `map.mts` and the
+  `scripts/map-image.ts` CLI. Imports the live map's constants via
+  *relative* paths (not `@/`) so it resolves identically under the
+  Netlify function bundler and tsx. Duplicates the sRGB color ramp for
+  the same satori/resvg reason as `og.mts`.
 - `src/pages/{404,500}.astro` — error pages. 500.astro is rendered
   automatically by Astro for unhandled SSR exceptions in `index.astro`'s
   frontmatter (middleware runs first, so `Astro.locals.theme` is populated).

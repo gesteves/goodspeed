@@ -49,6 +49,18 @@ npm run map-image -- "8:30am June 8 2026"  # natural-language date/time
 Output lands in `map-exports/` (gitignored). Flags: `--out <path>`,
 `--theme light|dark`, `--units imperial|metric`, `--arrow-scale <n>`.
 
+The same image is also served live by the deployed site:
+
+- `/images/map/current.png` — current conditions
+- `/images/map/today/HHMM.png` — that time today (24h, Pacific),
+  e.g. `/images/map/today/0830.png`
+- `/images/map/tomorrow/HHMM.png` — that time tomorrow (Pacific),
+  e.g. `/images/map/tomorrow/0700.png`
+
+These 404 when the requested time is outside the field feed's coverage.
+Add `?theme=dark` or `?units=metric` to match the CLI flags. (`/images/og.png`
+is the social share card — a separate, smaller crop.)
+
 ## Deploy
 
 Hosted on Netlify. `netlify.toml` lives in this directory (`web/netlify.toml`)

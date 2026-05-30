@@ -1,6 +1,6 @@
 /**
  * Netlify Function that renders the Open Graph share image served at
- * `/og.png`. Each request paints:
+ * `/images/og.png`. Each request paints:
  *
  *  1. A Mapbox Static Images basemap centred on the bay map's geographic
  *     center (same `center` the dashboard reads from the field feed).
@@ -287,5 +287,5 @@ export default async function handler(_req: Request): Promise<Response> {
 }
 
 export const config: Config = {
-  path: "/og.png",
+  path: "/images/og.png",
 };

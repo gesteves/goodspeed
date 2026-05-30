@@ -6,7 +6,7 @@
  *  1. Inline the Geist + Geist Mono variable fonts and the global CSS so the
  *     first paint already has the right typography (no FOUT).
  *  2. Render the document <head> with title/description + Open Graph metadata.
- *     The OG image is rendered by `netlify/edge-functions/og.tsx` at `/og.png`.
+ *     The OG image is rendered by `netlify/functions/og.mts` at `/images/og.png`.
  *  3. Apply the saved theme synchronously via the inline `is:inline` script
  *     reading the `gs-theme` cookie. Pages are prerendered, so middleware can't
  *     do this -- the inline script is what avoids a light-on-dark flash.
@@ -37,7 +37,7 @@ const {
 // `site` config in `astro.config.mjs`, which reads `process.env.URL` at build
 // time so the value follows the Netlify deploy (production, branch, deploy
 // preview) automatically.
-const ogImage = new URL("/og.png", Astro.site).toString();
+const ogImage = new URL("/images/og.png", Astro.site).toString();
 ---
 
 <!doctype html>
