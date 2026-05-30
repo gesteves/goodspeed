@@ -37,7 +37,17 @@ const {
 // `site` config in `astro.config.mjs`, which reads `process.env.URL` at build
 // time so the value follows the Netlify deploy (production, branch, deploy
 // preview) automatically.
-const ogImage = new URL("/images/og.png", Astro.site).toString();
+//
+// `?v=<hour>` busts the cache scrapers (Slack/iMessage/etc.) hold for an
+// og:image URL: it rotates so a stale share card picks up a fresh render, but
+// stays constant otherwise so concurrent unfurls share one `durable`-cached
+// render instead of each triggering a new one. The field feed is hourly, and
+// the OG picks the frame *nearest* now -- so the image changes once an hour, on
+// the half-hour. `round` (not `floor`) flips the version on that same boundary,
+// so the URL changes exactly when the rendered image does.
+const ogImage = new URL("/images/og.png", Astro.site);
+ogImage.searchParams.set("v", String(Math.round(Date.now() / 3_600_000)));
+const ogImageUrl = ogImage.toString();
 ---
 
 <!doctype html>
@@ -50,7 +60,7 @@ const ogImage = new URL("/images/og.png", Astro.site).toString();
     <meta property="og:type" content="website" />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
-    <meta property="og:image" content={ogImage} />
+    <meta property="og:image" content={ogImageUrl} />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     <meta
