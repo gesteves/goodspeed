@@ -33,7 +33,7 @@ npm run preview      # serve the production build locally
 # File-scoped (fast):
 npx vitest run src/lib/derive/tides.test.ts   # one test file
 npx eslint src/components/Dashboard.tsx        # lint one file
-npm run check:schema                           # just the feed/contract drift test
+npm run check:schema                           # just the point-feed contract drift test (field feed: schema-field.test.ts)
 
 npm run map-image    # tsx scripts/map-image.ts — write bay-map stills locally
 ```
@@ -87,9 +87,11 @@ is **no middleware** — prefs are read client-side (see below).
   feed (`field.ts`). `raw.ts` has a 5-min TTL cache + single-flight guard, a
   per-fetch timeout, and falls back to the last good response on upstream
   failure.
-- `src/lib/schema.ts` — Zod schema for the feed, derived from the shared
-  contract at `../schema/sfbofs-sfb1204.schema.json` (**source of truth**).
-  `schema.test.ts` fails if the two drift apart.
+- `src/lib/schema.ts` — Zod schemas for **both** feeds, hand-mirrored from the
+  shared contracts at `../schema/sfbofs-sfb1204.schema.json` (point feed) and
+  `../schema/sfbofs-field.schema.json` (gridded field feed) — the JSON Schemas
+  are the **source of truth**. `schema.test.ts` and `schema-field.test.ts` fail
+  the build if the Zod copy drifts from either contract.
 - `src/lib/derive/` — pure functions over the timeseries (tide extrema, "now"
   point, flood/ebb, staleness). Unit-tested.
 - `src/components/` — `Header`, `now/`, `charts/` (visx), `map/` (lazy Mapbox
@@ -126,6 +128,12 @@ Typed in `astro.config.mjs` (`env.schema`); see `.env.example`.
 - `GOODSPEED_FIELD_FEED_URL` — server, optional. Gridded field feed for the map.
 - `PUBLIC_MAPBOX_TOKEN` — client, optional. The bay map is hidden if absent.
 - `PUBLIC_PLAUSIBLE_SCRIPT_ID` — client, optional. Analytics off if unset.
+
+Not in the Astro schema: **`MAPBOX_STATIC_TOKEN`** is a raw `process.env` var
+(read directly, not via `astro:env`) that `netlify/functions/og.mts` falls back
+to for the share-image map when `PUBLIC_MAPBOX_TOKEN` is unset; without any
+Mapbox token the OG image's map is blank. (The `.env.example` comment calling
+`og` an "edge function" is stale — it's a Node Function.)
 
 Secrets live in `.env.local` (local) and Netlify env vars (deploy) — never in
 this repo.

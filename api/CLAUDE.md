@@ -2,8 +2,9 @@
 
 Python service that pulls SFBOFS model output from NOAA's THREDDS server,
 extracts surface conditions for station **SFB1204** (SW of Alcatraz Island),
-and publishes the resulting JSON feed over HTTP. The `web/` dashboard consumes
-that feed; the JSON contract is `../schema/sfbofs-sfb1204.schema.json`.
+and publishes the resulting JSON feeds over HTTP. The `web/` dashboard consumes
+them; the JSON contracts are `../schema/sfbofs-sfb1204.schema.json` (point feed)
+and `../schema/sfbofs-field.schema.json` (gridded field feed).
 
 **Stack:** Python 3.12+ (`<3.15`), `uv`, xarray + netCDF4 + numpy (NetCDF
 processing), Starlette + uvicorn (HTTP), APScheduler (cron), jsonschema
@@ -61,8 +62,9 @@ uv run python -m goodspeed.main serve --out-dir ../output  # scheduler + HTTP se
 - **`extract.py`** / **`extract_field.py`** — pull the SFB1204 station series
   and the gridded field, respectively (surface layer, tz-aware UTC times).
 - **`output.py`** — derives bearings/speeds, converts units, assembles the feed
-  dict, runs `sanity_check()`, and validates against the JSON Schema
-  (`Draft202012Validator`) before publishing.
+  dicts, runs `sanity_check()`, and validates each against its JSON Schema
+  (`Draft202012Validator`; `POINT_SCHEMA_FILENAME` / `FIELD_SCHEMA_FILENAME`,
+  resolved via `GOODSPEED_SCHEMA_PATH`) before publishing.
 - **`storage.py`** — writes `latest.json` / `field-latest.json` atomically (tmp
   file + `os.replace`, so an HTTP read never sees a partial file). Also
   `read_published_cycle()` for the skip check.
