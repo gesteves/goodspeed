@@ -9,9 +9,10 @@ import {
   faWind,
 } from "@fortawesome/pro-regular-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import type { ReactNode } from "react";
 import { compass8Word } from "@/lib/angles";
 import type { TideEvent } from "@/lib/derive/tides";
-import { formatClock, formatClockWithZone, formatNumber } from "@/lib/format";
+import { formatClock, formatNumber } from "@/lib/format";
 import type { TimeseriesPoint } from "@/lib/schema";
 import { METRICS, readMetric, unitField } from "@/lib/units/units";
 import { useUnits } from "../providers/UnitsProvider";
@@ -40,8 +41,12 @@ const TIDE_ICON: Record<Trend, IconDefinition> = {
 };
 
 export interface NowPanelProps {
-  /** Current wall-clock time (ISO string), shown in the panel header. */
-  now: string;
+  /** Panel heading, e.g. "Right now" or "Race day conditions". */
+  title: string;
+  /** `aria-label` for the panel `<section>`. */
+  ariaLabel: string;
+  /** Rendered beside the heading — the clock time, or a live countdown. */
+  headerExtra: ReactNode;
   point: TimeseriesPoint;
   trend: Trend;
   tempTrend: Trend;
@@ -139,15 +144,18 @@ export function NowPanelSkeleton() {
 }
 
 /**
- * "Right now" panel: a 4-card grid (water temp, current, tide, wind) showing
- * the value at `point` (typically the timeseries entry closest to wall-clock
- * "now"). Trend arrows on the temp + tide icons come from
- * `levelTrend` / `tempTrend` in `lib/derive/now.ts`. Re-renders whenever the
- * Dashboard ticks its local clock so the cards follow the user's clock, not
- * the server's.
+ * A 4-card conditions grid (water temp, current, tide, wind) showing the value
+ * at `point`. Used twice: "Right now" (the timeseries entry closest to
+ * wall-clock now, with the clock time in `headerExtra`) and "Race day
+ * conditions" (the entry nearest the race start, with a live countdown). Trend
+ * arrows on the temp + tide icons come from `levelTrend` / `tempTrend` in
+ * `lib/derive/now.ts`. Re-renders whenever the Dashboard ticks its local clock
+ * so the cards follow the user's clock, not the server's.
  */
 export function NowPanel({
-  now,
+  title,
+  ariaLabel,
+  headerExtra,
   point,
   trend,
   tempTrend,
@@ -164,10 +172,10 @@ export function NowPanel({
     : null;
 
   return (
-    <section className={styles.panel} aria-label="Current conditions">
+    <section className={styles.panel} aria-label={ariaLabel}>
       <div className={styles.panelHead}>
-        <h2 className={styles.panelTitle}>Right now</h2>
-        <span className={styles.panelTime}>{formatClockWithZone(now)}</span>
+        <h2 className={styles.panelTitle}>{title}</h2>
+        <span className={styles.panelTime}>{headerExtra}</span>
       </div>
 
       <div className={styles.grid}>

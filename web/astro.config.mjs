@@ -39,6 +39,11 @@ export default defineConfig({
         access: "public",
         optional: true,
       }),
+      PUBLIC_RACE_START: envField.string({
+        context: "client",
+        access: "public",
+        optional: true,
+      }),
     },
   },
 

@@ -84,3 +84,20 @@ export function formatRelative(
 export function formatNumber(value: number, decimals = 1): string {
   return value.toFixed(decimals);
 }
+
+const pad2 = (n: number): string => String(n).padStart(2, "0");
+
+/**
+ * Live countdown for a future instant: `"2d 03:14:09"` when a day or more out,
+ * else `"3:14:09"` (mins/secs zero-padded). Negative/zero input clamps to
+ * `"0:00:00"` — the caller decides what to show once the target has passed.
+ */
+export function formatCountdown(ms: number): string {
+  const totalSecs = Math.max(0, Math.floor(ms / 1000));
+  const days = Math.floor(totalSecs / 86_400);
+  const hours = Math.floor((totalSecs % 86_400) / 3600);
+  const mins = Math.floor((totalSecs % 3600) / 60);
+  const secs = totalSecs % 60;
+  const clock = `${hours}:${pad2(mins)}:${pad2(secs)}`;
+  return days > 0 ? `${days}d ${pad2(hours)}:${pad2(mins)}:${pad2(secs)}` : clock;
+}

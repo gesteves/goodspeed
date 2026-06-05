@@ -1,3 +1,4 @@
+import { PUBLIC_RACE_START } from "astro:env/client";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { DashboardData } from "@/lib/data-source";
 import {
@@ -6,8 +7,10 @@ import {
   nearestTimeIndex,
   tempTrend,
 } from "@/lib/derive/now";
+import { isInFeedRange, parseRaceStart } from "@/lib/derive/race";
 import { getStaleness } from "@/lib/derive/staleness";
 import { findTideExtrema, nextTideEvent } from "@/lib/derive/tides";
+import { formatClockWithZone } from "@/lib/format";
 import {
   isTheme,
   isUnitSystem,
@@ -24,6 +27,7 @@ import dashboardStyles from "./Dashboard.module.css";
 import { DashboardErrorBoundary } from "./DashboardErrorBoundary";
 import { Header, HeaderSkeleton } from "./Header";
 import { BayMapSection } from "./map/BayMapSection";
+import { Countdown } from "./now/Countdown";
 import { NowPanel, NowPanelSkeleton } from "./now/NowPanel";
 import { ThemeProvider } from "./providers/ThemeProvider";
 import { UnitsProvider } from "./providers/UnitsProvider";
@@ -44,6 +48,13 @@ interface Props {
 
 const REFRESH_INTERVAL_MS = 60_000;
 const CLOCK_TICK_MS = 30_000;
+
+/**
+ * Fixed race start instant, parsed once from the build-inlined env var (plain SF
+ * wall-clock, interpreted as America/Los_Angeles). `null` when unset/invalid, in
+ * which case the "Race day conditions" panel never renders.
+ */
+const RACE_START = parseRaceStart(PUBLIC_RACE_START);
 
 /**
  * Single React island that owns the interactive surface and the refresh loop.
@@ -203,6 +214,18 @@ function DashboardContent({
     const nextTide = nextTideEvent(tideEvents, now);
     const pointTimes = ts.map((p) => p.t);
     const nowFieldIndex = field ? nearestTimeIndex(field.t, now) : 0;
+
+    // Race-day forecast point: the timeseries entry nearest the configured race
+    // start, shown only when that instant falls within the feed's forecast
+    // window. Doesn't depend on `now` (the conditions are fixed once the feed
+    // covers the race), but recomputing here is cheap and keeps it in one place.
+    const raceInRange =
+      RACE_START !== null && isInFeedRange(pointTimes, RACE_START);
+    const raceIndex =
+      RACE_START && raceInRange
+        ? nearestTimeIndex(pointTimes, RACE_START)
+        : 0;
+
     return {
       ts,
       nowIso: now.toISOString(),
@@ -214,6 +237,11 @@ function DashboardContent({
       nextTide,
       pointTimes,
       nowFieldIndex,
+      raceInRange,
+      raceIndex,
+      raceTrend: levelTrend(ts, raceIndex),
+      raceTempDir: tempTrend(ts, raceIndex),
+      raceNextTide: RACE_START ? nextTideEvent(tideEvents, RACE_START) : null,
     };
   }, [feed, field, nowMs]);
 
@@ -221,12 +249,25 @@ function DashboardContent({
     <>
       <Header feed={feed} staleness={derived.staleness} />
       <NowPanel
-        now={derived.nowIso}
+        title="Right now"
+        ariaLabel="Current conditions"
+        headerExtra={formatClockWithZone(derived.nowIso)}
         point={derived.ts[derived.nowIndex]}
         trend={derived.trend}
         tempTrend={derived.tempDir}
         nextTide={derived.nextTide}
       />
+      {RACE_START && derived.raceInRange && (
+        <NowPanel
+          title="Race day conditions"
+          ariaLabel="Race day conditions"
+          headerExtra={<Countdown target={RACE_START} />}
+          point={derived.ts[derived.raceIndex]}
+          trend={derived.raceTrend}
+          tempTrend={derived.raceTempDir}
+          nextTide={derived.raceNextTide}
+        />
+      )}
       <section
         className={dashboardStyles.forecastSection}
         aria-labelledby="forecast-title"
