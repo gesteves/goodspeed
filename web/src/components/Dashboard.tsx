@@ -28,7 +28,7 @@ import { DashboardErrorBoundary } from "./DashboardErrorBoundary";
 import { Header, HeaderSkeleton } from "./Header";
 import { BayMapSection } from "./map/BayMapSection";
 import { Countdown } from "./now/Countdown";
-import { NowPanel, NowPanelSkeleton } from "./now/NowPanel";
+import { ConditionsPanel, NowPanelSkeleton } from "./now/NowPanel";
 import { ThemeProvider } from "./providers/ThemeProvider";
 import { UnitsProvider } from "./providers/UnitsProvider";
 
@@ -251,26 +251,26 @@ function DashboardContent({
   return (
     <>
       <Header feed={feed} staleness={derived.staleness} />
-      <NowPanel
-        title="Right now"
-        ariaLabel="Current conditions"
-        headerExtra={formatClockWithZone(derived.nowIso)}
-        point={derived.ts[derived.nowIndex]}
-        trend={derived.trend}
-        tempTrend={derived.tempDir}
-        nextTide={derived.nextTide}
+      <ConditionsPanel
+        now={{
+          point: derived.ts[derived.nowIndex],
+          trend: derived.trend,
+          tempTrend: derived.tempDir,
+          nextTide: derived.nextTide,
+          extra: formatClockWithZone(derived.nowIso),
+        }}
+        race={
+          RACE_START && derived.raceUpcoming
+            ? {
+                point: derived.ts[derived.raceIndex],
+                trend: derived.raceTrend,
+                tempTrend: derived.raceTempDir,
+                nextTide: derived.raceNextTide,
+                extra: <Countdown target={RACE_START} />,
+              }
+            : null
+        }
       />
-      {RACE_START && derived.raceUpcoming && (
-        <NowPanel
-          title="Race day conditions"
-          ariaLabel="Race day conditions"
-          headerExtra={<Countdown target={RACE_START} />}
-          point={derived.ts[derived.raceIndex]}
-          trend={derived.raceTrend}
-          tempTrend={derived.raceTempDir}
-          nextTide={derived.raceNextTide}
-        />
-      )}
       <section
         className={dashboardStyles.forecastSection}
         aria-labelledby="forecast-title"

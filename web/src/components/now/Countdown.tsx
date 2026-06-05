@@ -19,7 +19,7 @@ export function Countdown({ target }: { target: Date }) {
   const diff = target.getTime() - now;
   return (
     <span className={styles.countdown}>
-      {diff > 0 ? formatCountdown(diff) : "Underway"}
+      {diff > 0 ? `Race starts in ${formatCountdown(diff)}` : "Race underway"}
     </span>
   );
 }
