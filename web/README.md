@@ -10,10 +10,16 @@ Use Node LTS (`nvm use` reads `.nvmrc`).
 cp .env.example .env
 # point GOODSPEED_FEED_URL at a live URL or a local feed file
 npm install
-npm run dev
+netlify dev
 ```
 
-Dev server runs at http://localhost:4321.
+Runs at http://localhost:8888 (Netlify dev runs `astro dev` behind its proxy and
+also serves the `netlify/functions/*` image endpoints).
+
+> **Use `netlify dev`, not bare `npm run dev`.** The `@astrojs/netlify` adapter
+> expects the Netlify CLI's local runtime; starting `astro dev` directly
+> (`npm run dev`) throws an unhandled rejection about the Edge Functions dev
+> server and never comes up. Needs the Netlify CLI (`npm i -g netlify-cli`).
 
 ### Env vars
 
@@ -26,7 +32,7 @@ Typed in `astro.config.mjs` under `env.schema`; see `.env.example`.
 
 ## Commands
 
-- `npm run dev` — dev server
+- `netlify dev` — local dev server (see Local dev; **not** bare `npm run dev`)
 - `npm run build` — production build
 - `npm run preview` — preview the production build locally
 - `npm run lint` — ESLint

@@ -25,7 +25,7 @@ React 16–18 peer range and we're on React 19). Leave it.
 Prefer file-scoped commands for fast feedback; use the full suite before pushing.
 
 ```sh
-npm run dev          # dev server at http://localhost:4321
+netlify dev          # local dev server at http://localhost:8888 (see note below)
 npm run check        # lint + typecheck + test — the full gate Netlify runs
 npm run build        # production build (writes dist/ + .netlify/)
 npm run preview      # serve the production build locally
@@ -40,6 +40,12 @@ npm run map-image    # tsx scripts/map-image.ts — write bay-map stills locally
 
 `npm run typecheck` is `astro check` (Astro language server + `tsc --noEmit`).
 `npm run lint` is bare `eslint`. `npm test` is `vitest run`.
+
+**Run the dev server with `netlify dev`, not bare `npm run dev`.** The
+`@astrojs/netlify` adapter expects the Netlify CLI's local runtime; starting
+`astro dev` directly throws an unhandled rejection about the Edge Functions dev
+server and never comes up. `netlify dev` also serves the `netlify/functions/*`
+image endpoints locally. Needs the Netlify CLI (`npm i -g netlify-cli`).
 
 ## Code style & conventions
 
