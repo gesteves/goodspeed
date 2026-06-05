@@ -10,7 +10,11 @@ import {
 import { isInFeedRange, parseRaceStart } from "@/lib/derive/race";
 import { getStaleness } from "@/lib/derive/staleness";
 import { findTideExtrema, nextTideEvent } from "@/lib/derive/tides";
-import { formatClockWithZone, formatLongDateTime } from "@/lib/format";
+import {
+  formatClockWithZone,
+  formatDayClock,
+  formatLongDateTime,
+} from "@/lib/format";
 import {
   isTheme,
   isUnitSystem,
@@ -28,6 +32,7 @@ import { DashboardErrorBoundary } from "./DashboardErrorBoundary";
 import { Header, HeaderSkeleton } from "./Header";
 import { BayMapSection } from "./map/BayMapSection";
 import { ConditionsPanel, NowPanelSkeleton, type TabKey } from "./now/NowPanel";
+import { pathForTab, useTabRoute } from "./now/useTabRoute";
 import { ThemeProvider } from "./providers/ThemeProvider";
 import { UnitsProvider } from "./providers/UnitsProvider";
 
@@ -238,6 +243,10 @@ function DashboardContent({
       RACE_START && raceUpcoming
         ? nearestTimeIndex(pointTimes, RACE_START)
         : 0;
+    const raceFieldIndex =
+      field && RACE_START && raceUpcoming
+        ? nearestTimeIndex(field.t, RACE_START)
+        : 0;
 
     return {
       ts,
@@ -252,6 +261,7 @@ function DashboardContent({
       nowFieldIndex,
       raceUpcoming,
       raceIndex,
+      raceFieldIndex,
       raceTrend: levelTrend(ts, raceIndex),
       raceTempDir: tempTrend(ts, raceIndex),
       raceNextTide: RACE_START ? nextTideEvent(tideEvents, RACE_START) : null,
@@ -269,11 +279,38 @@ function DashboardContent({
         }
       : null;
 
+  const [tab, selectTab] = useTabRoute(initialTab);
+  // `raceTab` is the source of truth for whether the race view exists; coerce to
+  // "now" when it isn't available (bare /race-day, race started, out of window).
+  const active: TabKey = raceTab && tab === "race" ? "race" : "now";
+
+  // Keep the URL matching the *visible* tab. User toggles already pushed via
+  // `selectTab`; this `replaceState` only corrects the cases where `active` was
+  // forced back to "now" (e.g. /race-day with no forecast) — no extra history
+  // entry, no reload.
+  useEffect(() => {
+    const path = pathForTab(active);
+    if (window.location.pathname !== path) {
+      window.history.replaceState(null, "", path);
+    }
+  }, [active]);
+
+  // The toggle moves the "now" reference marker (and the map frame) to the
+  // chosen time: real-time now, or the race start. The marker label reads "Now"
+  // or the race time ("Sun 7:00 AM") so the timeline stays self-documenting.
+  const onRace = active === "race";
+  const markerIndex = onRace ? derived.raceIndex : derived.nowIndex;
+  const markerFieldIndex = onRace
+    ? derived.raceFieldIndex
+    : derived.nowFieldIndex;
+  const markerLabel = onRace && RACE_START ? formatDayClock(RACE_START) : "Now";
+
   return (
     <>
       <Header feed={feed} staleness={derived.staleness} />
       <ConditionsPanel
-        initialTab={initialTab}
+        active={active}
+        onSelect={selectTab}
         now={{
           point: derived.ts[derived.nowIndex],
           trend: derived.trend,
@@ -294,13 +331,15 @@ function DashboardContent({
           <BayMapSection
             field={field}
             fieldStatus={fieldStatus}
-            nowFieldIndex={derived.nowFieldIndex}
+            nowFieldIndex={markerFieldIndex}
             pointTimes={derived.pointTimes}
-            nowIndex={derived.nowIndex}
+            nowIndex={markerIndex}
+            nowLabel={markerLabel}
           />
           <ForecastCharts
             data={derived.ts}
-            nowIndex={derived.nowIndex}
+            nowIndex={markerIndex}
+            nowLabel={markerLabel}
             tideEvents={derived.tideEvents}
           />
         </ScrubProvider>

@@ -19,6 +19,8 @@ interface BayMapSectionProps {
   nowFieldIndex: number;
   pointTimes: string[];
   nowIndex: number;
+  /** Label for the reference marker on the time axis ("Now" or a race time). */
+  nowLabel?: string;
 }
 
 /**
@@ -49,6 +51,7 @@ export function BayMapSection({
   nowFieldIndex,
   pointTimes,
   nowIndex,
+  nowLabel,
 }: BayMapSectionProps) {
   if (fieldStatus === "failed") {
     return (
@@ -76,7 +79,11 @@ export function BayMapSection({
         >
           <div className={styles.skeleton} />
         </div>
-        <MapTimeAxis pointTimes={pointTimes} nowIndex={nowIndex} />
+        <MapTimeAxis
+          pointTimes={pointTimes}
+          nowIndex={nowIndex}
+          nowLabel={nowLabel}
+        />
       </section>
     );
   }
@@ -96,7 +103,11 @@ export function BayMapSection({
           />
         </Suspense>
       </div>
-      <MapTimeAxis pointTimes={pointTimes} nowIndex={nowIndex} />
+      <MapTimeAxis
+        pointTimes={pointTimes}
+        nowIndex={nowIndex}
+        nowLabel={nowLabel}
+      />
     </section>
   );
 }

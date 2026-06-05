@@ -12,8 +12,10 @@ import styles from "./mapTimeAxis.module.css";
 export interface MapTimeAxisProps {
   /** Timeseries timestamps, parallel-indexed with the shared scrub index. */
   pointTimes: string[];
-  /** Timeseries index closest to the current real-time "now". */
+  /** Timeseries index of the reference marker (real-time now, or race start). */
   nowIndex: number;
+  /** Label shown above the marker line ("Now" or a race time). */
+  nowLabel?: string;
 }
 
 /** Width below which we switch to a mobile-sized strip (matches BayMap's
@@ -76,6 +78,7 @@ function Inner({
   width,
   pointTimes,
   nowIndex,
+  nowLabel = "Now",
 }: MapTimeAxisProps & { width: number }) {
   const { hoveredIndex } = useScrub();
   const lastIndex = pointTimes.length - 1;
@@ -121,10 +124,13 @@ function Inner({
   const hoveredX = hovered != null ? xScale(times[hovered]) : null;
   const hoveredLabel = hovered != null ? formatDayClock(pointTimes[hovered]) : "";
   const valueIndex = hovered ?? safeNowIndex;
+  // "Now" is our sentinel for the real-time marker; any other label is a race
+  // time, so describe it as such for assistive tech.
+  const markerDescriptor = nowLabel === "Now" ? "now" : "race start";
   const valueText =
     hovered != null
       ? `${hoveredLabel}, scrubbing`
-      : `${formatDayClock(pointTimes[safeNowIndex])}, now`;
+      : `${formatDayClock(pointTimes[safeNowIndex])}, ${markerDescriptor}`;
 
   // Anchor a label so it never clips at the strip edges: if the underlying
   // line is too close to a side, switch from center-anchored to
@@ -171,9 +177,9 @@ function Inner({
           />
         )}
 
-        {/* "Now" label sits above the now line so the strip is self-
-            documenting. Hidden while scrubbing so it doesn't compete with
-            the hover label at the same y. */}
+        {/* Marker label ("Now" or the race time) sits above the line so the
+            strip is self-documenting. Hidden while scrubbing so it doesn't
+            compete with the hover label at the same y. */}
         {nowAnchor && hovered == null && (
           <text
             className={styles.nowLabel}
@@ -181,7 +187,7 @@ function Inner({
             y={LABEL_Y}
             textAnchor={nowAnchor.anchor}
           >
-            Now
+            {nowLabel}
           </text>
         )}
 

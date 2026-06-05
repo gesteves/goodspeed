@@ -24,6 +24,8 @@ import { TimeSeriesChart } from "./TimeSeriesChart";
 export interface ForecastChartsProps {
   data: TimeseriesPoint[];
   nowIndex: number;
+  /** Label for the reference marker when not scrubbing ("Now" or a race time). */
+  nowLabel?: string;
   tideEvents: TideEvent[];
 }
 
@@ -128,6 +130,7 @@ function ChartStack({
   width,
   data,
   nowIndex,
+  nowLabel = "Now",
   tideEvents,
 }: ForecastChartsProps & { width: number }) {
   const { units } = useUnits();
@@ -161,10 +164,10 @@ function ChartStack({
     [units],
   );
 
-  // The readouts show the scrubbed point, or "now" when not scrubbing.
+  // The readouts show the scrubbed point, or the marker (now / race) otherwise.
   const displayIndex = Math.min(hoveredIndex ?? nowIndex, lastIndex);
   const dp = data[displayIndex];
-  const timeLabel = hoveredIndex != null ? formatDayClock(dp.t) : "Now";
+  const timeLabel = hoveredIndex != null ? formatDayClock(dp.t) : nowLabel;
 
   const common = { data, times, width, xScale, nowIndex };
 
