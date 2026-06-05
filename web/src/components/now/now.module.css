@@ -22,12 +22,6 @@
   font-size: 0.82rem;
 }
 
-/* Live countdown beside the heading. Tabular figures keep the width steady as
-   the digits tick so the heading doesn't shift each second. */
-.countdown {
-  font-variant-numeric: tabular-nums;
-}
-
 /* ---- Card grid: 2x2 on small screens, one row of four when wide ---- */
 .grid {
   display: grid;

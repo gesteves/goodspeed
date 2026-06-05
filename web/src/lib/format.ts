@@ -41,6 +41,11 @@ export function formatDateTime(value: string | number | Date): string {
   return safeFormat(value, "MMM d, h:mm a zzz");
 }
 
+/** "Sunday, June 7th, 2026 at 7:00 AM PDT" */
+export function formatLongDateTime(value: string | number | Date): string {
+  return safeFormat(value, "EEEE, MMMM do, yyyy 'at' h:mm a zzz");
+}
+
 /** Short chart x-axis label, e.g. "3 PM" or "Fri" at midnight. */
 export function formatAxisTick(value: string | number | Date): string {
   try {
@@ -83,21 +88,4 @@ export function formatRelative(
 /** Fixed-decimal number for display. */
 export function formatNumber(value: number, decimals = 1): string {
   return value.toFixed(decimals);
-}
-
-const pad2 = (n: number): string => String(n).padStart(2, "0");
-
-/**
- * Live countdown for a future instant: `"2d 03:14:09"` when a day or more out,
- * else `"3:14:09"` (mins/secs zero-padded). Negative/zero input clamps to
- * `"0:00:00"` — the caller decides what to show once the target has passed.
- */
-export function formatCountdown(ms: number): string {
-  const totalSecs = Math.max(0, Math.floor(ms / 1000));
-  const days = Math.floor(totalSecs / 86_400);
-  const hours = Math.floor((totalSecs % 86_400) / 3600);
-  const mins = Math.floor((totalSecs % 3600) / 60);
-  const secs = totalSecs % 60;
-  const clock = `${hours}:${pad2(mins)}:${pad2(secs)}`;
-  return days > 0 ? `${days}d ${pad2(hours)}:${pad2(mins)}:${pad2(secs)}` : clock;
 }

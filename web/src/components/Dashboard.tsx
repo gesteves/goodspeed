@@ -10,7 +10,7 @@ import {
 import { isInFeedRange, parseRaceStart } from "@/lib/derive/race";
 import { getStaleness } from "@/lib/derive/staleness";
 import { findTideExtrema, nextTideEvent } from "@/lib/derive/tides";
-import { formatClockWithZone } from "@/lib/format";
+import { formatClockWithZone, formatLongDateTime } from "@/lib/format";
 import {
   isTheme,
   isUnitSystem,
@@ -27,7 +27,6 @@ import dashboardStyles from "./Dashboard.module.css";
 import { DashboardErrorBoundary } from "./DashboardErrorBoundary";
 import { Header, HeaderSkeleton } from "./Header";
 import { BayMapSection } from "./map/BayMapSection";
-import { Countdown } from "./now/Countdown";
 import { ConditionsPanel, NowPanelSkeleton } from "./now/NowPanel";
 import { ThemeProvider } from "./providers/ThemeProvider";
 import { UnitsProvider } from "./providers/UnitsProvider";
@@ -266,7 +265,7 @@ function DashboardContent({
                 trend: derived.raceTrend,
                 tempTrend: derived.raceTempDir,
                 nextTide: derived.raceNextTide,
-                extra: <Countdown target={RACE_START} />,
+                extra: formatLongDateTime(RACE_START),
               }
             : null
         }

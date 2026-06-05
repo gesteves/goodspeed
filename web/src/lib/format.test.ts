@@ -1,26 +1,21 @@
 import { describe, expect, it } from "vitest";
-import { formatCountdown } from "./format";
+import { formatLongDateTime } from "./format";
 
-describe("formatCountdown", () => {
-  const secs = (n: number) => n * 1000;
-
-  it("shows a day prefix with padded clock when >= 1 day out", () => {
-    const ms = secs(2 * 86_400 + 3 * 3600 + 14 * 60 + 9);
-    expect(formatCountdown(ms)).toBe("2d 03:14:09");
+describe("formatLongDateTime", () => {
+  it("renders a friendly full date and time with the timezone", () => {
+    // 2026-06-07T14:00Z == 7:00 AM PDT (UTC-7) in America/Los_Angeles.
+    expect(formatLongDateTime("2026-06-07T14:00:00Z")).toBe(
+      "Sunday, June 7th, 2026 at 7:00 AM PDT",
+    );
   });
 
-  it("drops the day prefix and leaves hours unpadded when < 1 day", () => {
-    const ms = secs(3 * 3600 + 14 * 60 + 9);
-    expect(formatCountdown(ms)).toBe("3:14:09");
+  it("uses the right ordinal suffix", () => {
+    expect(formatLongDateTime("2026-06-01T19:30:00Z")).toBe(
+      "Monday, June 1st, 2026 at 12:30 PM PDT",
+    );
   });
 
-  it("zero-pads minutes and seconds", () => {
-    expect(formatCountdown(secs(5))).toBe("0:00:05");
-    expect(formatCountdown(secs(9 * 60 + 5))).toBe("0:09:05");
-  });
-
-  it("clamps negative or zero to 0:00:00", () => {
-    expect(formatCountdown(0)).toBe("0:00:00");
-    expect(formatCountdown(-5000)).toBe("0:00:00");
+  it("returns an em-dash for an invalid value", () => {
+    expect(formatLongDateTime("not a date")).toBe("—");
   });
 });
