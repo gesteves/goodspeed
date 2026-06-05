@@ -216,13 +216,16 @@ function DashboardContent({
     const nowFieldIndex = field ? nearestTimeIndex(field.t, now) : 0;
 
     // Race-day forecast point: the timeseries entry nearest the configured race
-    // start, shown only when that instant falls within the feed's forecast
-    // window. Doesn't depend on `now` (the conditions are fixed once the feed
-    // covers the race), but recomputing here is cheap and keeps it in one place.
-    const raceInRange =
-      RACE_START !== null && isInFeedRange(pointTimes, RACE_START);
+    // start. Shown only while the race is still upcoming (so it never shows
+    // past data — once the start passes, "Right now" covers it) and within the
+    // feed's forecast window. Recomputed on each clock tick so it disappears at
+    // the start.
+    const raceUpcoming =
+      RACE_START !== null &&
+      RACE_START.getTime() > now.getTime() &&
+      isInFeedRange(pointTimes, RACE_START);
     const raceIndex =
-      RACE_START && raceInRange
+      RACE_START && raceUpcoming
         ? nearestTimeIndex(pointTimes, RACE_START)
         : 0;
 
@@ -237,7 +240,7 @@ function DashboardContent({
       nextTide,
       pointTimes,
       nowFieldIndex,
-      raceInRange,
+      raceUpcoming,
       raceIndex,
       raceTrend: levelTrend(ts, raceIndex),
       raceTempDir: tempTrend(ts, raceIndex),
@@ -257,7 +260,7 @@ function DashboardContent({
         tempTrend={derived.tempDir}
         nextTide={derived.nextTide}
       />
-      {RACE_START && derived.raceInRange && (
+      {RACE_START && derived.raceUpcoming && (
         <NowPanel
           title="Race day conditions"
           ariaLabel="Race day conditions"
