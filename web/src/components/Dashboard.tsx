@@ -11,7 +11,7 @@ import { isInFeedRange, parseRaceStart } from "@/lib/derive/race";
 import { getStaleness } from "@/lib/derive/staleness";
 import { findTideExtrema, nextTideEvent } from "@/lib/derive/tides";
 import {
-  formatClockWithZone,
+  formatClock,
   formatDayClock,
   formatLongDateTime,
 } from "@/lib/format";
@@ -316,7 +316,7 @@ function DashboardContent({
           trend: derived.trend,
           tempTrend: derived.tempDir,
           nextTide: derived.nextTide,
-          extra: formatClockWithZone(derived.nowIso),
+          extra: formatClock(derived.nowIso),
         }}
         race={raceTab}
       />
