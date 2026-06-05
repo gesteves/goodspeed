@@ -1,0 +1,20 @@
+---
+/**
+ * Race day deep link (`/race-day`). Same prerendered shell as `/`, but the
+ * Dashboard island opens on the "Race day" tab. If there's no race forecast to
+ * show (no race configured, already started, or still beyond the forecast
+ * window), the island falls back to "Right now" and rewrites the URL to `/`
+ * (via `replaceState`, no reload) — see `ConditionsPanel`. `noindex` keeps this
+ * near-duplicate of `/` out of search results.
+ */
+import Layout from "@/layouts/Layout.astro";
+import DashboardPage from "@/components/DashboardPage.astro";
+
+export const prerender = true;
+
+const shareUrl = new URL("/race-day", Astro.site).toString();
+---
+
+<Layout noindex>
+  <DashboardPage initialTab="race" shareUrl={shareUrl} />
+</Layout>

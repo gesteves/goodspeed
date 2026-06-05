@@ -27,7 +27,7 @@ import dashboardStyles from "./Dashboard.module.css";
 import { DashboardErrorBoundary } from "./DashboardErrorBoundary";
 import { Header, HeaderSkeleton } from "./Header";
 import { BayMapSection } from "./map/BayMapSection";
-import { ConditionsPanel, NowPanelSkeleton } from "./now/NowPanel";
+import { ConditionsPanel, NowPanelSkeleton, type TabKey } from "./now/NowPanel";
 import { ThemeProvider } from "./providers/ThemeProvider";
 import { UnitsProvider } from "./providers/UnitsProvider";
 
@@ -43,6 +43,11 @@ interface Props {
    * island renders skeletons until `/dashboard.json` resolves on hydration.
    */
   initialData?: DashboardPayload;
+  /**
+   * Conditions tab to open on first render. The `/race-day` page passes
+   * `"race"` to deep-link the Race day tab; defaults to `"now"`.
+   */
+  initialTab?: TabKey;
 }
 
 const REFRESH_INTERVAL_MS = 60_000;
@@ -73,7 +78,7 @@ const RACE_START = parseRaceStart(PUBLIC_RACE_START);
  * The whole interactive tree lives in one island so scrub state, theme,
  * units, and the Mapbox instance survive each refresh.
  */
-export function Dashboard({ initialData }: Props) {
+export function Dashboard({ initialData, initialTab = "now" }: Props) {
   const [data, setData] = useState<DashboardPayload | null>(
     initialData ?? null,
   );
@@ -148,7 +153,11 @@ export function Dashboard({ initialData }: Props) {
       <UnitsProvider initialUnits={initialUnits}>
         <DashboardErrorBoundary>
           {data ? (
-            <DashboardContent data={data} nowMs={nowMs} />
+            <DashboardContent
+              data={data}
+              nowMs={nowMs}
+              initialTab={initialTab}
+            />
           ) : (
             <DashboardSkeleton />
           )}
@@ -196,9 +205,11 @@ function DashboardSkeleton() {
 function DashboardContent({
   data,
   nowMs,
+  initialTab,
 }: {
   data: DashboardPayload;
   nowMs: number;
+  initialTab: TabKey;
 }) {
   const { feed, field, fieldStatus } = data;
 
@@ -247,10 +258,22 @@ function DashboardContent({
     };
   }, [feed, field, nowMs]);
 
+  const raceTab =
+    RACE_START && derived.raceUpcoming
+      ? {
+          point: derived.ts[derived.raceIndex],
+          trend: derived.raceTrend,
+          tempTrend: derived.raceTempDir,
+          nextTide: derived.raceNextTide,
+          extra: formatLongDateTime(RACE_START),
+        }
+      : null;
+
   return (
     <>
       <Header feed={feed} staleness={derived.staleness} />
       <ConditionsPanel
+        initialTab={initialTab}
         now={{
           point: derived.ts[derived.nowIndex],
           trend: derived.trend,
@@ -258,17 +281,7 @@ function DashboardContent({
           nextTide: derived.nextTide,
           extra: formatClockWithZone(derived.nowIso),
         }}
-        race={
-          RACE_START && derived.raceUpcoming
-            ? {
-                point: derived.ts[derived.raceIndex],
-                trend: derived.raceTrend,
-                tempTrend: derived.raceTempDir,
-                nextTide: derived.raceNextTide,
-                extra: formatLongDateTime(RACE_START),
-              }
-            : null
-        }
+        race={raceTab}
       />
       <section
         className={dashboardStyles.forecastSection}

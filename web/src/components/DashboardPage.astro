@@ -1,0 +1,94 @@
+---
+/**
+ * Shared page body for the dashboard, used by both `/` and `/race-day`. Renders
+ * the skip link, the Dashboard island (opening on `initialTab`), the Share
+ * button, and the footer. Kept separate so the two routes don't duplicate the
+ * markup and styles — they differ only in `initialTab` and `shareUrl`.
+ */
+import { Dashboard } from "@/components/Dashboard";
+import { Share } from "@/components/Share";
+
+interface Props {
+  /** Conditions tab the island opens on ("now" by default; "race" on /race-day). */
+  initialTab?: "now" | "race";
+  /** Absolute URL the Share buttons point at. */
+  shareUrl: string;
+}
+
+const { initialTab = "now", shareUrl } = Astro.props;
+---
+
+<div class="page">
+  <a href="#main" class="skipLink">Skip to main content</a>
+  <main id="main" class="main">
+    <Dashboard client:load initialTab={initialTab} />
+    <Share baseUrl={shareUrl} client:visible />
+    <footer class="footer">
+      The data presented here is based on a hydrodynamic model provided by the National Oceanic and Atmospheric Administration’s San Francisco Bay Operational Forecast
+      System. These are computer-generated forecasts, not measurements, have not been subjected to <abbr title="National Oceanic and Atmospheric Administration">NOAA</abbr>’s quality control procedures, and are provided “as is” for
+      informational purposes only. Use at your own&nbsp;risk.<br>
+      <a href="https://tidesandcurrents.noaa.gov/ofs/ofs_station.html?stname=SW%20of%20AI&ofs=sfb&stnid=SFB1204&subdomain=en" target="_blank">Source Data</a> · <a href="https://github.com/gesteves/goodspeed/" target="_blank">GitHub</a>
+    </footer>
+  </main>
+</div>
+
+<style>
+  .page {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+    padding: 18px 14px 40px;
+    /* Safety net against sub-pixel chart/axis bleed on narrow viewports. */
+    overflow-x: hidden;
+  }
+
+  .main {
+    display: flex;
+    flex-direction: column;
+    gap: 26px;
+    width: 100%;
+    max-width: 880px;
+    /* Allow the column to shrink below its charts' intrinsic width. */
+    min-width: 0;
+  }
+
+  .footer {
+    border-top: 1px solid var(--border);
+    padding-top: 14px;
+    color: var(--text-muted);
+    font-size: 0.76rem;
+    line-height: 1.55;
+  }
+
+  /* Keyboard skip link: invisible until focused, slides in from the top edge. */
+  .skipLink {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 100;
+    padding: 8px 12px;
+    border-radius: 0 0 var(--radius-sm) 0;
+    background: var(--accent);
+    color: var(--accent-contrast);
+    font-size: 0.86rem;
+    font-weight: 600;
+    text-decoration: none;
+    transform: translateY(-110%);
+    transition: transform 0.12s ease;
+  }
+
+  .skipLink:focus,
+  .skipLink:focus-visible {
+    transform: translateY(0);
+  }
+
+  @media (min-width: 700px) {
+    .page {
+      padding: 32px 24px 56px;
+    }
+
+    .main {
+      gap: 30px;
+    }
+  }
+</style>

@@ -9,7 +9,7 @@ import {
   faWind,
 } from "@fortawesome/pro-regular-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { type ReactNode, useState } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 import { compass8Word } from "@/lib/angles";
 import type { TideEvent } from "@/lib/derive/tides";
 import { formatClock, formatNumber } from "@/lib/format";
@@ -197,18 +197,27 @@ function ConditionsCards({ point, trend, tempTrend, nextTide }: ConditionsData) 
   );
 }
 
-type TabKey = "now" | "race";
+export type TabKey = "now" | "race";
+
+/** The route each tab maps to, so the URL stays in sync with the visible tab. */
+const pathForTab = (tab: TabKey): string =>
+  tab === "race" ? "/race-day" : "/";
+
+const tabForPath = (path: string): TabKey =>
+  path === "/race-day" ? "race" : "now";
 
 export interface ConditionsPanelProps {
   /** Live conditions at wall-clock "now" (clock time in `extra`). */
   now: ConditionsTab;
   /**
-   * Forecast conditions at the race start (live countdown in `extra`), or
-   * `null` when there's no usable forecast — no race configured, race already
+   * Forecast conditions at the race start (the formatted race date in `extra`),
+   * or `null` when there's no usable forecast — no race configured, race already
    * started, or race still beyond the forecast window. Null → no tabs, just
    * "Right now".
    */
   race: ConditionsTab | null;
+  /** Tab to open on first render (for the `/race-day` deep link). */
+  initialTab?: TabKey;
 }
 
 /**
@@ -218,12 +227,43 @@ export interface ConditionsPanelProps {
  * no race forecast it's just the plain "Right now" panel, so stale/past or
  * not-yet-forecast race data is never shown.
  */
-export function ConditionsPanel({ now, race }: ConditionsPanelProps) {
-  const [tab, setTab] = useState<TabKey>("now");
+export function ConditionsPanel({
+  now,
+  race,
+  initialTab = "now",
+}: ConditionsPanelProps) {
+  const [tab, setTab] = useState<TabKey>(initialTab);
   // `race` is the source of truth for whether the switcher exists; when it's
   // null we always render "now" regardless of the remembered tab.
   const active: TabKey = race && tab === "race" ? "race" : "now";
   const data = active === "race" && race ? race : now;
+
+  // A user toggle pushes a history entry (so Back returns to the prior tab).
+  const selectTab = (next: TabKey) => {
+    setTab(next);
+    const path = pathForTab(next);
+    if (window.location.pathname !== path) {
+      window.history.pushState(null, "", path);
+    }
+  };
+
+  // Keep the URL in sync with the *visible* tab. This also corrects the URL
+  // when the race tab isn't really available (a bare `/race-day` with no
+  // forecast, or the race starting mid-session): `active` falls back to "now",
+  // so we `replaceState` back to "/" — no extra history entry, no reload.
+  useEffect(() => {
+    const path = pathForTab(active);
+    if (window.location.pathname !== path) {
+      window.history.replaceState(null, "", path);
+    }
+  }, [active]);
+
+  // Reflect Back/Forward navigation between the two routes onto the tab.
+  useEffect(() => {
+    const onPop = () => setTab(tabForPath(window.location.pathname));
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, []);
 
   return (
     <section className={styles.panel} aria-label="Conditions">
@@ -232,7 +272,7 @@ export function ConditionsPanel({ now, race }: ConditionsPanelProps) {
           <Segmented<TabKey>
             ariaLabel="Conditions view"
             value={active}
-            onChange={setTab}
+            onChange={selectTab}
             options={[
               { value: "now", label: "Right now", title: "Right now" },
               {

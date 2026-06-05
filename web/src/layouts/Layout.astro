@@ -26,11 +26,14 @@ import { PUBLIC_PLAUSIBLE_SCRIPT_ID } from "astro:env/client";
 interface Props {
   title?: string;
   description?: string;
+  /** Emit `<meta name="robots" content="noindex">` (e.g. the /race-day deep link). */
+  noindex?: boolean;
 }
 
 const {
   title = "Alcatraz Swim Conditions",
   description = "Modeled water temperature, currents, tide, and wind near Alcatraz Island, San Francisco Bay.",
+  noindex = false,
 } = Astro.props;
 
 // Absolute URLs for share metadata. `Astro.site` is sourced from the
@@ -57,6 +60,7 @@ const ogImageUrl = ogImage.toString();
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{title}</title>
     <meta name="description" content={description} />
+    {noindex && <meta name="robots" content="noindex" />}
     <meta property="og:type" content="website" />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
