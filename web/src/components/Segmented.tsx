@@ -5,6 +5,8 @@ export interface SegmentedOption<T extends string> {
   value: T;
   label: ReactNode;
   title: string;
+  /** When true the segment is shown greyed out and can't be selected. */
+  disabled?: boolean;
 }
 
 /** A small segmented control used for the units and theme toggles. */
@@ -30,6 +32,7 @@ export function Segmented<T extends string>({
           aria-pressed={opt.value === value}
           aria-label={opt.title}
           title={opt.title}
+          disabled={opt.disabled}
           onClick={() => onChange(opt.value)}
         >
           {opt.label}

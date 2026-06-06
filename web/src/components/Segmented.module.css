@@ -37,6 +37,15 @@
   box-shadow: var(--shadow);
 }
 
+.segment:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.segment:disabled:hover {
+  color: var(--text-muted);
+}
+
 .segment svg {
   display: block;
 }

@@ -153,6 +153,11 @@ export function Dashboard({ initialData, initialTab = "now" }: Props) {
     return () => window.clearInterval(id);
   }, []);
 
+  // Whether to show the conditions switcher: a race is configured and still in
+  // the future. This is knowable without the feed, so the tabs render from the
+  // first (skeleton) paint and never flash in once data arrives.
+  const showTabs = RACE_START !== null && RACE_START.getTime() > nowMs;
+
   return (
     <ThemeProvider initialTheme={initialTheme}>
       <UnitsProvider initialUnits={initialUnits}>
@@ -162,9 +167,10 @@ export function Dashboard({ initialData, initialTab = "now" }: Props) {
               data={data}
               nowMs={nowMs}
               initialTab={initialTab}
+              showTabs={showTabs}
             />
           ) : (
-            <DashboardSkeleton />
+            <DashboardSkeleton showTabs={showTabs} />
           )}
         </DashboardErrorBoundary>
       </UnitsProvider>
@@ -177,11 +183,11 @@ export function Dashboard({ initialData, initialTab = "now" }: Props) {
  * for the prerendered shell). Mirrors the live layout so the layout doesn't
  * jump when real data arrives.
  */
-function DashboardSkeleton() {
+function DashboardSkeleton({ showTabs = false }: { showTabs?: boolean }) {
   return (
     <>
       <HeaderSkeleton />
-      <NowPanelSkeleton />
+      <NowPanelSkeleton showTabs={showTabs} />
       <section
         className={dashboardStyles.forecastSection}
         aria-labelledby="forecast-title"
@@ -211,10 +217,12 @@ function DashboardContent({
   data,
   nowMs,
   initialTab,
+  showTabs,
 }: {
   data: DashboardPayload;
   nowMs: number;
   initialTab: TabKey;
+  showTabs: boolean;
 }) {
   const { feed, field, fieldStatus } = data;
 
@@ -309,6 +317,7 @@ function DashboardContent({
     <>
       <Header feed={feed} staleness={derived.staleness} />
       <ConditionsPanel
+        showTabs={showTabs}
         active={active}
         onSelect={selectTab}
         now={{

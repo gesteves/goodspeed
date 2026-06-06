@@ -54,6 +54,42 @@ export interface ConditionsTab extends ConditionsData {
   extra: ReactNode;
 }
 
+export type TabKey = "now" | "race";
+
+/**
+ * The "Right now" / "Race day" switcher. Shared by the live panel and the
+ * loading skeleton so they look identical and the tabs never flash in. The
+ * race tab is disabled until its forecast is actually available.
+ */
+function ConditionsTabs({
+  active,
+  raceDisabled,
+  onSelect,
+}: {
+  active: TabKey;
+  raceDisabled: boolean;
+  onSelect: (tab: TabKey) => void;
+}) {
+  return (
+    <Segmented<TabKey>
+      ariaLabel="Conditions view"
+      value={active}
+      onChange={onSelect}
+      options={[
+        { value: "now", label: "Right now", title: "Right now" },
+        {
+          value: "race",
+          label: "Race day",
+          title: raceDisabled
+            ? "Race day conditions — forecast not available yet"
+            : "Race day conditions",
+          disabled: raceDisabled,
+        },
+      ]}
+    />
+  );
+}
+
 const SKELETON_CARDS: {
   label: string;
   shortLabel?: string;
@@ -89,15 +125,21 @@ const SKELETON_CARDS: {
 ];
 
 /**
- * Pre-data placeholder for `NowPanel`. Renders the same 4-card grid with
- * shimmering value blocks so the panel's height matches the real component
- * and there's no layout shift when data arrives.
+ * Pre-data placeholder for the conditions panel. Renders the same 4-card grid
+ * with shimmering value blocks so the panel's height matches the real component
+ * and there's no layout shift when data arrives. When a race is configured and
+ * still upcoming (`showTabs`), it also renders the switcher with "Race day"
+ * disabled, so the tabs are present from first paint and don't flash in.
  */
-export function NowPanelSkeleton() {
+export function NowPanelSkeleton({ showTabs = false }: { showTabs?: boolean }) {
   return (
     <section className={styles.panel} aria-label="Current conditions" aria-busy="true">
       <div className={styles.panelHead}>
-        <h2 className={styles.panelTitle}>Right now</h2>
+        {showTabs ? (
+          <ConditionsTabs active="now" raceDisabled onSelect={() => {}} />
+        ) : (
+          <h2 className={styles.panelTitle}>Right now</h2>
+        )}
       </div>
 
       <div className={styles.grid}>
@@ -197,18 +239,22 @@ function ConditionsCards({ point, trend, tempTrend, nextTide }: ConditionsData) 
   );
 }
 
-export type TabKey = "now" | "race";
-
 export interface ConditionsPanelProps {
   /** Live conditions at wall-clock "now" (clock time in `extra`). */
   now: ConditionsTab;
   /**
    * Forecast conditions at the race start (the formatted race date in `extra`),
-   * or `null` when there's no usable forecast — no race configured, race already
-   * started, or race still beyond the forecast window. Null → no tabs, just
-   * "Right now".
+   * or `null` when there's no usable forecast yet — race still beyond the
+   * forecast window, or data not loaded. Null while `showTabs` is true → the
+   * "Race day" tab shows disabled.
    */
   race: ConditionsTab | null;
+  /**
+   * Whether to render the switcher at all — true when a race is configured and
+   * still in the future (knowable without the feed, so the tabs are present
+   * from first paint). False → just the plain "Right now" panel.
+   */
+  showTabs: boolean;
   /** The currently visible tab (controlled by the parent). */
   active: TabKey;
   /** Called when the user picks a tab. */
@@ -216,38 +262,29 @@ export interface ConditionsPanelProps {
 }
 
 /**
- * The conditions panel: the 4-card grid, plus — only when a race forecast is
- * actually available (`race` non-null) — a "Right now" / "Race day" switcher
- * (reusing `Segmented`) above it, showing one set of conditions at a time. With
- * no race forecast it's just the plain "Right now" panel, so stale/past or
- * not-yet-forecast race data is never shown.
+ * The conditions panel: the 4-card grid, plus — when a race is configured and
+ * upcoming (`showTabs`) — a "Right now" / "Race day" switcher above it, showing
+ * one set of conditions at a time. The "Race day" tab is disabled until its
+ * forecast is available (`race` non-null); until then the parent keeps `active`
+ * on "now", so stale/past or not-yet-forecast race data is never shown.
  */
 export function ConditionsPanel({
   now,
   race,
+  showTabs,
   active,
   onSelect,
 }: ConditionsPanelProps) {
-  // `race` is the source of truth for whether the switcher exists; the parent
-  // already coerces `active` to "now" whenever `race` is null.
   const data = active === "race" && race ? race : now;
 
   return (
     <section className={styles.panel} aria-label="Conditions">
       <div className={styles.panelHead}>
-        {race ? (
-          <Segmented<TabKey>
-            ariaLabel="Conditions view"
-            value={active}
-            onChange={onSelect}
-            options={[
-              { value: "now", label: "Right now", title: "Right now" },
-              {
-                value: "race",
-                label: "Race day",
-                title: "Race day conditions",
-              },
-            ]}
+        {showTabs ? (
+          <ConditionsTabs
+            active={active}
+            raceDisabled={race == null}
+            onSelect={onSelect}
           />
         ) : (
           <h2 className={styles.panelTitle}>Right now</h2>
