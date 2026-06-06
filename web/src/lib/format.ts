@@ -41,9 +41,9 @@ export function formatDateTime(value: string | number | Date): string {
   return safeFormat(value, "MMM d, h:mm a zzz");
 }
 
-/** "June 7th, 2026, 7:00 AM" (display TZ is implied — always SF). */
+/** "June 7th, 2026 at 7:00 AM" (display TZ is implied — always SF). */
 export function formatLongDateTime(value: string | number | Date): string {
-  return safeFormat(value, "MMMM do, yyyy, h:mm a");
+  return safeFormat(value, "MMMM do, yyyy 'at' h:mm a");
 }
 
 /** Short chart x-axis label, e.g. "3 PM" or "Fri" at midnight. */
