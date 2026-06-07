@@ -33,6 +33,7 @@ import {
   SLACK_SPEED_KT,
   START_LAT,
   START_LON,
+  START_RADIUS_M,
 } from "../map-constants";
 import type { FieldFeed } from "../schema";
 import type { UnitSystem } from "../units/units";
@@ -124,21 +125,6 @@ function tempColorStops(n: number): string[] {
 function offsetLonByMeters(lat: number, lon: number, meters: number): number {
   return lon + meters / (111_320 * Math.cos((lat * Math.PI) / 180));
 }
-
-function haversineMeters(lat1: number, lon1: number, lat2: number, lon2: number): number {
-  const R = 6_371_000;
-  const toRad = (deg: number) => (deg * Math.PI) / 180;
-  const dLat = toRad(lat2 - lat1);
-  const dLon = toRad(lon2 - lon1);
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
-  return 2 * R * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-}
-
-// Edge of the start ring sits 1.5 mi from the finish (same as the live map).
-const START_RADIUS_M =
-  haversineMeters(START_LAT, START_LON, FINISH_LAT, FINISH_LON) - 1.5 * 1609.344;
 
 // Font Awesome "location-crosshairs" glyph for the finish marker.
 const [FINISH_ICON_W, FINISH_ICON_H, , , FINISH_ICON_RAW] = faLocationCrosshairs.icon;
@@ -260,36 +246,18 @@ export function buildMapImage(
     );
   }
 
-  // ---- Swim start ring (dashed circle, faded toward the ocean side) ----
+  // ---- Swim start ring (dashed circle midway between Alcatraz and shore) ----
   const startPx = project(START_LON, START_LAT);
   const startEast = project(offsetLonByMeters(START_LAT, START_LON, START_RADIUS_M), START_LAT);
   const ringR = Math.max(Math.abs(startEast.x - startPx.x), 36 * SCALE);
   svgChildren.push(
-    h(
-      "defs",
-      { key: "defs" },
-      h(
-        "linearGradient",
-        {
-          id: "startRing",
-          gradientUnits: "userSpaceOnUse",
-          x1: startPx.x,
-          y1: startPx.y - ringR,
-          x2: startPx.x,
-          y2: startPx.y + ringR,
-        },
-        h("stop", { offset: "0%", stopColor: pal.ink, stopOpacity: 0 }),
-        h("stop", { offset: "40%", stopColor: pal.ink, stopOpacity: 0 }),
-        h("stop", { offset: "100%", stopColor: pal.ink, stopOpacity: 1 }),
-      ),
-    ),
     h("circle", {
       key: "ring",
       cx: startPx.x,
       cy: startPx.y,
       r: ringR,
       fill: "none",
-      stroke: "url(#startRing)",
+      stroke: pal.ink,
       strokeWidth: 1.5 * SCALE,
       strokeDasharray: `${5 * SCALE} ${4 * SCALE}`,
       opacity: 0.6,
@@ -399,7 +367,7 @@ export function buildMapImage(
       },
       svgChildren,
     ),
-    h("div", { style: labelStyle(startPx.x, startPx.y + ringR / 2) }, "Swim start"),
+    h("div", { style: labelStyle(startPx.x, startPx.y) }, "Swim start"),
     h("div", { style: labelStyle(finishPx.x, finishPx.y - 17 * SCALE) }, "Swim finish"),
     legend,
   );

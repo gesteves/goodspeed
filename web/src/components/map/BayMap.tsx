@@ -16,6 +16,7 @@ import {
   SLACK_SPEED_KT,
   START_LAT,
   START_LON,
+  START_RADIUS_M,
 } from "@/lib/map-constants";
 
 const [FINISH_ICON_W, FINISH_ICON_H, , , FINISH_ICON_PATH] =
@@ -43,28 +44,6 @@ const DARK_STYLE = "mapbox://styles/mapbox/dark-v11";
 function offsetLonByMeters(lat: number, lon: number, meters: number): number {
   return lon + meters / (111_320 * Math.cos((lat * Math.PI) / 180));
 }
-
-function haversineMeters(
-  lat1: number,
-  lon1: number,
-  lat2: number,
-  lon2: number,
-): number {
-  const R = 6_371_000;
-  const toRad = (deg: number) => (deg * Math.PI) / 180;
-  const dLat = toRad(lat2 - lat1);
-  const dLon = toRad(lon2 - lon1);
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
-  return 2 * R * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-}
-
-// Sized so the edge of the ring sits 1.5 miles from the finish: a swimmer
-// dropped anywhere on the visible arc has at most 1.5 mi of water to cover.
-const START_RADIUS_M =
-  haversineMeters(START_LAT, START_LON, FINISH_LAT, FINISH_LON) -
-  1.5 * 1609.344;
 
 /** Use the chart scrub to pick a frame in the field feed (snap by timestamp). */
 function useFieldFrameIndex(
@@ -323,37 +302,21 @@ export function BayMap({ field, nowFieldIndex, pointTimes }: BayMapProps) {
             startRadiusPx > 0 &&
             (() => {
               const r = Math.max(startRadiusPx, 36 * arrowScale);
-              const labelX = startPx.x;
-              const labelY = startPx.y + r / 2;
               return (
                 <>
-                  <defs>
-                    <linearGradient
-                      id="bayMap-startRing"
-                      gradientUnits="userSpaceOnUse"
-                      x1={startPx.x}
-                      y1={startPx.y - r}
-                      x2={startPx.x}
-                      y2={startPx.y + r}
-                    >
-                      <stop offset="0%" stopColor="var(--text)" stopOpacity="0" />
-                      <stop offset="40%" stopColor="var(--text)" stopOpacity="0" />
-                      <stop offset="100%" stopColor="var(--text)" stopOpacity="1" />
-                    </linearGradient>
-                  </defs>
                   <circle
                     cx={startPx.x}
                     cy={startPx.y}
                     r={r}
                     fill="none"
-                    stroke="url(#bayMap-startRing)"
+                    stroke="var(--text)"
                     strokeWidth={1.5 * arrowScale}
                     strokeDasharray={`${5 * arrowScale} ${4 * arrowScale}`}
                     className={styles.startZone}
                   />
                   <text
-                    x={labelX}
-                    y={labelY}
+                    x={startPx.x}
+                    y={startPx.y}
                     textAnchor="middle"
                     dominantBaseline="middle"
                     className={styles.markerLabel}
