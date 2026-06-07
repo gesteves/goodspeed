@@ -1,4 +1,3 @@
-import { faLocationCrosshairs } from "@fortawesome/pro-regular-svg-icons";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { useEffect, useMemo, useState } from "react";
@@ -11,16 +10,9 @@ import {
   ARROW_SHAFT_PAD,
   ARROW_SHAFT_WIDTH,
   arrowPx,
-  FINISH_LAT,
-  FINISH_LON,
   SLACK_SPEED_KT,
-  START_LAT,
-  START_LON,
-  START_RADIUS_M,
 } from "@/lib/map-constants";
 
-const [FINISH_ICON_W, FINISH_ICON_H, , , FINISH_ICON_PATH] =
-  faLocationCrosshairs.icon;
 import type { FieldFeed } from "@/lib/schema";
 import { useScrub } from "../charts/ScrubContext";
 import { useTheme } from "../providers/ThemeProvider";
@@ -40,10 +32,6 @@ export interface BayMapProps {
 
 const LIGHT_STYLE = "mapbox://styles/mapbox/light-v11";
 const DARK_STYLE = "mapbox://styles/mapbox/dark-v11";
-
-function offsetLonByMeters(lat: number, lon: number, meters: number): number {
-  return lon + meters / (111_320 * Math.cos((lat * Math.PI) / 180));
-}
 
 /** Use the chart scrub to pick a frame in the field feed (snap by timestamp). */
 function useFieldFrameIndex(
@@ -210,30 +198,6 @@ export function BayMap({ field, nowFieldIndex, pointTimes }: BayMapProps) {
 
   const positions = useMapPositions(map, field.grid.lat, field.grid.lon);
 
-  // Project the start centre + an edge point + the finish in one call so we
-  // get a geographically-stable radius for the start disk (the map auto-fits
-  // to its bounds, so px-per-metre changes with container width).
-  const markerLats = useMemo(
-    () => [START_LAT, START_LAT, FINISH_LAT],
-    [],
-  );
-  const markerLons = useMemo(
-    () => [
-      START_LON,
-      offsetLonByMeters(START_LAT, START_LON, START_RADIUS_M),
-      FINISH_LON,
-    ],
-    [],
-  );
-  const markerPositions = useMapPositions(map, markerLats, markerLons);
-  const startPx = markerPositions[0];
-  const startEdgePx = markerPositions[1];
-  const finishPx = markerPositions[2];
-  const startRadiusPx =
-    startPx && startEdgePx
-      ? Math.hypot(startEdgePx.x - startPx.x, startEdgePx.y - startPx.y)
-      : 0;
-
   const frame =
     field.frames[
       Math.min(Math.max(0, fieldIndex), field.frames.length - 1)
@@ -265,9 +229,7 @@ export function BayMap({ field, nowFieldIndex, pointTimes }: BayMapProps) {
       `Modeled bay map across ${n} water points in the ` +
       `central San Francisco Bay near Alcatraz. Water temperature ranges from ` +
       `${minT.toFixed(1)} to ${maxT.toFixed(1)} ${tempUnit}; current speed ` +
-      `${minS.toFixed(1)} to ${maxS.toFixed(1)} ${speedUnit}. Race start is a ` +
-      `boat drop near Alcatraz at a location chosen on race day; the finish ` +
-      `is at the St. Francis Yacht Club.`
+      `${minS.toFixed(1)} to ${maxS.toFixed(1)} ${speedUnit}.`
     );
   }, [frame, units]);
 
@@ -298,76 +260,10 @@ export function BayMap({ field, nowFieldIndex, pointTimes }: BayMapProps) {
               />
             );
           })}
-          {startPx &&
-            startRadiusPx > 0 &&
-            (() => {
-              const r = Math.max(startRadiusPx, 36 * arrowScale);
-              return (
-                <>
-                  <circle
-                    cx={startPx.x}
-                    cy={startPx.y}
-                    r={r}
-                    fill="none"
-                    stroke="var(--text)"
-                    strokeWidth={1.5 * arrowScale}
-                    strokeDasharray={`${5 * arrowScale} ${4 * arrowScale}`}
-                    className={styles.startZone}
-                  />
-                  <text
-                    x={startPx.x}
-                    y={startPx.y}
-                    textAnchor="middle"
-                    dominantBaseline="middle"
-                    className={styles.markerLabel}
-                  >
-                    Swim start
-                  </text>
-                </>
-              );
-            })()}
-          {finishPx && (
-            <>
-              <FinishMarker x={finishPx.x} y={finishPx.y} scale={arrowScale} />
-              <text
-                x={finishPx.x}
-                y={finishPx.y - 17 * arrowScale}
-                textAnchor="middle"
-                className={styles.markerLabel}
-              >
-                Swim finish
-              </text>
-            </>
-          )}
         </svg>
       )}
       <MapLegend units={units} />
     </div>
-  );
-}
-
-/**
- * Finish marker -- the Font Awesome "location-crosshairs" glyph centred on
- * (x, y). The icon path is pulled from the FA SVG core at import time so we
- * can render it inline in the same overlay SVG as the arrows.
- */
-function FinishMarker({
-  x,
-  y,
-  scale,
-}: {
-  x: number;
-  y: number;
-  scale: number;
-}) {
-  const s = (18 * scale) / FINISH_ICON_H;
-  return (
-    <g
-      transform={`translate(${x} ${y}) scale(${s}) translate(${-FINISH_ICON_W / 2} ${-FINISH_ICON_H / 2})`}
-      className={styles.finishMarker}
-    >
-      <path d={FINISH_ICON_PATH as string} />
-    </g>
   );
 }
 

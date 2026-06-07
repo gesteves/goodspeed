@@ -13,7 +13,6 @@
  * (not the `@/` alias) so it resolves identically under tsx and the Netlify
  * function bundler.
  */
-import { faLocationCrosshairs } from "@fortawesome/pro-regular-svg-icons";
 import { createElement as h, type ReactElement, type ReactNode } from "react";
 import { TEMP_DOMAIN_C, tempDomainLabels } from "../colors";
 import {
@@ -28,12 +27,7 @@ import {
   ARROW_SHAFT_PAD,
   ARROW_SHAFT_WIDTH,
   arrowPx,
-  FINISH_LAT,
-  FINISH_LON,
   SLACK_SPEED_KT,
-  START_LAT,
-  START_LON,
-  START_RADIUS_M,
 } from "../map-constants";
 import type { FieldFeed } from "../schema";
 import type { UnitSystem } from "../units/units";
@@ -120,15 +114,6 @@ function tempColorStops(n: number): string[] {
   const [lo, hi] = TEMP_DOMAIN_C;
   return Array.from({ length: n }, (_, i) => tempColor(lo + ((hi - lo) * i) / (n - 1)));
 }
-
-// ---- Geometry (shared with BayMap.tsx) --------------------------------------
-function offsetLonByMeters(lat: number, lon: number, meters: number): number {
-  return lon + meters / (111_320 * Math.cos((lat * Math.PI) / 180));
-}
-
-// Font Awesome "location-crosshairs" glyph for the finish marker.
-const [FINISH_ICON_W, FINISH_ICON_H, , , FINISH_ICON_RAW] = faLocationCrosshairs.icon;
-const FINISH_ICON_PATH = Array.isArray(FINISH_ICON_RAW) ? FINISH_ICON_RAW[0] : FINISH_ICON_RAW;
 
 interface Pt {
   x: number;
@@ -246,56 +231,6 @@ export function buildMapImage(
     );
   }
 
-  // ---- Swim start ring (dashed circle midway between Alcatraz and shore) ----
-  const startPx = project(START_LON, START_LAT);
-  const startEast = project(offsetLonByMeters(START_LAT, START_LON, START_RADIUS_M), START_LAT);
-  const ringR = Math.max(Math.abs(startEast.x - startPx.x), 36 * SCALE);
-  svgChildren.push(
-    h("circle", {
-      key: "ring",
-      cx: startPx.x,
-      cy: startPx.y,
-      r: ringR,
-      fill: "none",
-      stroke: pal.ink,
-      strokeWidth: 1.5 * SCALE,
-      strokeDasharray: `${5 * SCALE} ${4 * SCALE}`,
-      opacity: 0.6,
-    }),
-  );
-
-  // ---- Swim finish marker (FA location-crosshairs glyph) ----
-  const finishPx = project(FINISH_LON, FINISH_LAT);
-  const iconScale = (18 * SCALE) / FINISH_ICON_H;
-  svgChildren.push(
-    h(
-      "g",
-      {
-        key: "finish",
-        transform:
-          `translate(${finishPx.x} ${finishPx.y}) scale(${iconScale}) ` +
-          `translate(${-FINISH_ICON_W / 2} ${-FINISH_ICON_H / 2})`,
-        fill: pal.ink,
-        opacity: 0.75,
-      },
-      h("path", { d: FINISH_ICON_PATH as string }),
-    ),
-  );
-
-  // ---- Labels (HTML so satori renders text with its bundled Geist) ----
-  const labelStyle = (left: number, top: number) =>
-    ({
-      position: "absolute" as const,
-      left,
-      top,
-      transform: "translate(-50%, -50%)",
-      color: pal.label,
-      fontSize: 13 * SCALE,
-      fontWeight: 600,
-      textShadow: `0 0 ${3 * SCALE}px ${pal.halo}, 0 0 ${3 * SCALE}px ${pal.halo}`,
-      whiteSpace: "nowrap" as const,
-    });
-
   // ---- Legend (mirrors MapLegend.tsx + .legend CSS) ----
   const labels = tempDomainLabels(units);
   const gradient = `linear-gradient(to right, ${tempColorStops(9).join(", ")})`;
@@ -367,8 +302,6 @@ export function buildMapImage(
       },
       svgChildren,
     ),
-    h("div", { style: labelStyle(startPx.x, startPx.y) }, "Swim start"),
-    h("div", { style: labelStyle(finishPx.x, finishPx.y - 17 * SCALE) }, "Swim finish"),
     legend,
   );
 

@@ -10,22 +10,6 @@
  * dependency-free so it stays cheap to import from anywhere.
  */
 
-// Race finish: St. Francis Yacht Club.
-export const FINISH_LAT = 37.80706968914476;
-export const FINISH_LON = -122.4480366321103;
-
-// Race start: boat drop on race day. Centered on the midpoint between Alcatraz
-// and the San Francisco shore; the ring radius covers the rough envelope of
-// likely drop points.
-export const START_LAT = 37.81877333276813;
-export const START_LON = -122.42248179898682;
-
-// Radius of the start ring (drop-zone envelope). Configurable -- bump
-// START_RADIUS_FT to widen or tighten the ring. Both renderers project
-// START_RADIUS_M to screen pixels via offsetLonByMeters().
-export const START_RADIUS_FT = 1800;
-export const START_RADIUS_M = START_RADIUS_FT * 0.3048;
-
 // Arrow geometry (in unscaled pixels). The renderers multiply by their own
 // scale factor — see `arrowScale` in BayMap.tsx and ARROW_SCALE in og.tsx.
 export const ARROW_HEAD_HALF = 4.5;

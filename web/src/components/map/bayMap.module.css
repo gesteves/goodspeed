@@ -54,36 +54,6 @@
   pointer-events: none;
 }
 
-/* Start zone -- dashed circle midway between Alcatraz and the SF shore,
-   indicating the boat-drop area (exact point chosen on race day). --opacity
-   keeps it from competing with the data layers. */
-.startZone {
-  opacity: 0.55;
-}
-
-/* Shared label style for the start/finish markers. paint-order + a
-   --surface-colored stroke gives the text a soft halo so it stays legible
-   over any map tile without dominating the design. */
-.markerLabel {
-  fill: var(--text-muted);
-  font-family: var(--font-geist-sans);
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-anchor: middle;
-  paint-order: stroke fill;
-  stroke: var(--surface);
-  stroke-opacity: 0.65;
-  stroke-width: 1.5px;
-  stroke-linejoin: round;
-}
-
-/* Finish marker at St. Francis Yacht Club. Matches the start ring's tone
-   (--text @ 0.55 opacity) so the two markers read as a set. */
-.finishMarker {
-  opacity: 0.55;
-  fill: var(--text);
-}
-
 /* The map is fully static (panning/zooming disabled), so suppress Mapbox's
    default grab cursor — it advertises an affordance that doesn't exist. */
 .wrap :global(.mapboxgl-canvas-container),
