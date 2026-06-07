@@ -14,6 +14,17 @@ export default defineConfig({
   site: process.env.URL ?? "http://localhost:4321",
   output: "server",
   adapter: netlify(),
+
+  // Serve clean, slash-free URLs (`/race-day`, not `/race-day/`). `format:
+  // "file"` prerenders `race-day.html` rather than `race-day/index.html`, so
+  // Netlify serves `/race-day` directly with no 301 to a trailing slash;
+  // `trailingSlash: "never"` keeps the dev server and adapter in agreement.
+  // This matches the slash-free paths the island writes via History
+  // (`pathForTab` in `now/useTabRoute.ts`), so the server canonical URL and the
+  // client-rewritten URL are identical — no redirect flash on `/race-day`.
+  trailingSlash: "never",
+  build: { format: "file" },
+
   integrations: [react()],
 
   // Typed env vars. Required-but-missing vars throw at startup; `src/lib/env.ts`
