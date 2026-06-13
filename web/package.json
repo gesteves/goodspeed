@@ -17,7 +17,7 @@
     "check:schema": "vitest run src/lib/schema.test.ts"
   },
   "dependencies": {
-    "@astrojs/netlify": "^7.0.12",
+    "@astrojs/netlify": "^7.0.13",
     "@astrojs/react": "^5.0.7",
     "@fontsource-variable/geist": "^5.2.9",
     "@fontsource-variable/geist-mono": "^5.2.8",
@@ -39,10 +39,10 @@
     "@visx/shape": "^3.12.0",
     "@visx/text": "^3.12.0",
     "@visx/tooltip": "^3.12.0",
-    "astro": "^6.4.4",
+    "astro": "^6.4.6",
     "date-fns": "^4.4.0",
     "date-fns-tz": "^3.2.0",
-    "mapbox-gl": "^3.24.0",
+    "mapbox-gl": "^3.24.1",
     "react": "19.2.7",
     "react-dom": "19.2.7",
     "zod": "^4.4.3"
