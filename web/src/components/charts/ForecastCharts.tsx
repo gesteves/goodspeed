@@ -1,4 +1,3 @@
-import { ParentSize } from "@visx/responsive";
 import { useMemo } from "react";
 import { compass16 } from "@/lib/angles";
 import { classifyCurrent } from "@/lib/derive/currents";
@@ -15,6 +14,7 @@ import {
 import { useUnits } from "../providers/UnitsProvider";
 import { ArrowTimeline } from "./ArrowTimeline";
 import styles from "./charts.module.css";
+import { MeasuredWidth } from "./MeasuredWidth";
 import { CHART_MARGIN, makeTimeScale } from "./scales";
 import { useScrub } from "./ScrubContext";
 import { useScrubKeyboard } from "./useScrubKeyboard";
@@ -118,7 +118,7 @@ function DirectionReadout({
 
 /**
  * The actual six-row chart stack. Split from `ForecastCharts` so it only
- * renders once `<ParentSize>` has measured a non-zero width -- visx chart
+ * renders once `<MeasuredWidth>` has measured a non-zero width -- visx chart
  * setup is wasted work at width 0.
  *
  * Order matters: stacked charts share a single x scale built from the
@@ -298,7 +298,7 @@ export function ForecastCharts(props: ForecastChartsProps) {
   return (
     <section className={styles.section} aria-label="48-hour forecast">
       <div className={styles.stack}>
-        <ParentSize debounceTime={0} style={{ width: "100%" }}>
+        <MeasuredWidth>
           {({ width }) =>
             width > 1 && props.data.length > 0 ? (
               <ChartStack width={width} {...props} />
@@ -306,7 +306,7 @@ export function ForecastCharts(props: ForecastChartsProps) {
               <div className={styles.placeholder} />
             )
           }
-        </ParentSize>
+        </MeasuredWidth>
       </div>
     </section>
   );

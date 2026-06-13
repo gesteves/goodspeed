@@ -1,8 +1,8 @@
 import { AxisBottom } from "@visx/axis";
-import { ParentSize } from "@visx/responsive";
 import { Line } from "@visx/shape";
 import { useMemo, useRef } from "react";
 import { formatAxisTick, formatDayClock } from "@/lib/format";
+import { MeasuredWidth } from "../charts/MeasuredWidth";
 import { CHART_MARGIN, makeTimeScale } from "../charts/scales";
 import { useScrub } from "../charts/ScrubContext";
 import { useScrubHover } from "../charts/useScrubHover";
@@ -54,7 +54,7 @@ const tickLabelProps = {
 export function MapTimeAxis(props: MapTimeAxisProps) {
   return (
     <div className={styles.strip}>
-      <ParentSize debounceTime={0} style={{ width: "100%" }}>
+      <MeasuredWidth>
         {({ width }) =>
           width > 1 && props.pointTimes.length > 0 ? (
             <Inner width={width} {...props} />
@@ -62,13 +62,13 @@ export function MapTimeAxis(props: MapTimeAxisProps) {
             <div className={styles.placeholder} aria-hidden="true" />
           )
         }
-      </ParentSize>
+      </MeasuredWidth>
     </div>
   );
 }
 
 /**
- * Inner strip rendered once `<ParentSize>` has measured a non-zero width.
+ * Inner strip rendered once `<MeasuredWidth>` has measured a non-zero width.
  * Owns the SVG axis, the "Now" marker, and the hover crosshair + label.
  * Pointer / touch / keyboard input is wired into the shared `ScrubContext`
  * via the same hooks the chart stack uses, so all three surfaces stay in
