@@ -58,9 +58,9 @@
     "eslint": "^10",
     "eslint-plugin-astro": "^2.1.1",
     "eslint-plugin-react-hooks": "^7.1.1",
-    "tsx": "^4.22.4",
+    "tsx": "^4.23.0",
     "typescript": "^6",
-    "typescript-eslint": "^8.62.0",
+    "typescript-eslint": "^8.62.1",
     "vitest": "^4.1.9"
   }
 }
