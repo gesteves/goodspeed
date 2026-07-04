@@ -17,7 +17,7 @@
     "check:schema": "vitest run src/lib/schema.test.ts"
   },
   "dependencies": {
-    "@astrojs/netlify": "^7.0.13",
+    "@astrojs/netlify": "^8.1.1",
     "@astrojs/react": "^6.0.0",
     "@fontsource-variable/geist": "^5.2.9",
     "@fontsource-variable/geist-mono": "^5.2.8",
