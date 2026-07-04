@@ -18,7 +18,7 @@
   },
   "dependencies": {
     "@astrojs/netlify": "^8.1.1",
-    "@astrojs/react": "^6.0.0",
+    "@astrojs/react": "^6.0.1",
     "@fontsource-variable/geist": "^5.2.9",
     "@fontsource-variable/geist-mono": "^5.2.8",
     "@fortawesome/fontawesome-svg-core": "^7.2.0",
@@ -39,7 +39,7 @@
     "@visx/shape": "^4.0.0",
     "@visx/text": "^4.0.0",
     "@visx/tooltip": "^4.0.0",
-    "astro": "^7.0.3",
+    "astro": "^7.0.6",
     "date-fns": "^4.4.0",
     "date-fns-tz": "^3.2.0",
     "mapbox-gl": "^3.25.0",
