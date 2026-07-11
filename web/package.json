@@ -39,10 +39,10 @@
     "@visx/shape": "^4.0.0",
     "@visx/text": "^4.0.0",
     "@visx/tooltip": "^4.0.0",
-    "astro": "^7.0.6",
+    "astro": "^7.0.7",
     "date-fns": "^4.4.0",
     "date-fns-tz": "^3.2.0",
-    "mapbox-gl": "^3.25.0",
+    "mapbox-gl": "^3.26.0",
     "react": "19.2.7",
     "react-dom": "19.2.7",
     "zod": "^4.4.3"
