@@ -17,10 +17,10 @@
     "check:schema": "vitest run src/lib/schema.test.ts"
   },
   "dependencies": {
-    "@astrojs/netlify": "^8.1.2",
-    "@astrojs/react": "^6.0.1",
-    "@fontsource-variable/geist": "^5.2.9",
-    "@fontsource-variable/geist-mono": "^5.2.8",
+    "@astrojs/netlify": "^8.1.3",
+    "@astrojs/react": "^6.0.2",
+    "@fontsource-variable/geist": "^5.3.0",
+    "@fontsource-variable/geist-mono": "^5.3.0",
     "@fortawesome/fontawesome-svg-core": "^7.2.0",
     "@fortawesome/free-brands-svg-icons": "^7.2.0",
     "@fortawesome/pro-regular-svg-icons": "^7.2.0",
@@ -39,12 +39,12 @@
     "@visx/shape": "^4.0.0",
     "@visx/text": "^4.0.0",
     "@visx/tooltip": "^4.0.0",
-    "astro": "^7.1.1",
+    "astro": "^7.1.5",
     "date-fns": "^4.4.0",
     "date-fns-tz": "^3.2.0",
-    "mapbox-gl": "^3.26.0",
-    "react": "19.2.7",
-    "react-dom": "19.2.7",
+    "mapbox-gl": "^3.27.0",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
     "zod": "^4.4.3"
   },
   "devDependencies": {
