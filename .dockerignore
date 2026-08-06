@@ -1,4 +1,12 @@
-# Build context is the repo root for the worker Docker build.
+# Build context is the REPO ROOT for the api image (it COPYs both api/ and
+# schema/), so deploy from the root:
+#
+#   fly deploy --config api/fly.toml --dockerfile api/Dockerfile
+#
+# Running it from inside api/ makes api/ the context, which both skips this
+# file (Docker reads .dockerignore from the context root) and breaks the
+# COPY paths in api/Dockerfile.
+#
 # Keep the context small.
 
 **/__pycache__/
@@ -11,13 +19,20 @@
 .gitignore
 .github/
 output/
-worker/output/
+api/output/
 
 # Tests + fixtures don't need to be in the image.
-worker/tests/
+api/tests/
 
-# The web app is irrelevant to the worker image.
+# The web app is irrelevant to the api image.
 web/
+.netlify/
+
+# Local dev data, docs, editor config — none of it is COPYed.
+data/
+**/CLAUDE.md
+**/README.md
+.claude/
 
 # OS / editor
 .DS_Store
