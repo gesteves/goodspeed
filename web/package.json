@@ -39,7 +39,7 @@
     "@visx/shape": "^4.0.0",
     "@visx/text": "^4.0.0",
     "@visx/tooltip": "^4.0.0",
-    "astro": "^7.1.5",
+    "astro": "^7.1.6",
     "date-fns": "^4.4.0",
     "date-fns-tz": "^3.2.0",
     "mapbox-gl": "^3.27.0",
